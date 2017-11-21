@@ -76,7 +76,7 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 	{
 		digitalWrite(mPortNrDir, LOW);
 		//!!! Unbedingt im Datenblatt des Motortreibers nachsehen, wie PWM und Richtung zusammenh�ngen
-		//drehzahl_pwm = 255 - drehzahl_pwm;	//wenn der Motor r�ckw�rts l�uft, ist die pwm invertiert (255 = min, 0 = max)
+		drehzahl_pwm = 255 - drehzahl_pwm;	//wenn der Motor r�ckw�rts l�uft, ist die pwm invertiert (255 = min, 0 = max)
 	}
 
 	//Zuweisen des PWM-Werts an den richtigen Port entsprechend der Motornr.
