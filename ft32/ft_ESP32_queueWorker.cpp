@@ -239,7 +239,7 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 					mMotorArray[i] = mMotorSave[i];	//Ausgangswerte zur�cksetzen
 					mMotorArray[i].reRun();	//Ausgang neu setzen
 					mLampeArray[i] = mLampeSave[i];
-					mLampeArray[i].reRun();
+					//mLampeArray[i].reRun();
 				}
 			}
 		} while (waitTime > 0 && !mSHM->commonStopp);	//warten auf Ende der Pausenzeit oder auf Stopp
