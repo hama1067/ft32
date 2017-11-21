@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+        <link rel="stylesheet" href="stylesheet.css">
+        
+        <!-- Syntax highlighting -->
+        <link href="prism.css" rel="stylesheet" />
+        
+	    <meta charset="utf-8"/>
+	    <title>ESP IDE</title>
+	</head>	
+	<xml id="toolbox" style="display: none">
+        <category name="Basic">
+            <block type="start"></block>
+        </category>
+        <category name="Logic">
+            <block type="math_number"></block>
+            <block type="digital_logic_compare"></block>
+            <block type="analog_logic_compare"></block>
+        </category>
+        
+        <category name="Actuator">
+            <block type="motor"></block>
+            <block type="lamp"></block>
+        </category>        
+        <category name="Loops">
+            <block type="controls_repeat_ext">
+                <value name="TIMES">
+                    <block type="math_number">
+                        <field name="NUM">10</field>
+                    </block>
+                </value>
+            </block>
+            <block type="controls_whileuntil1"></block>
+        </category>        
+        <category name="Branching">
+            <block type="controls_if1"></block>
+        </category>
+        
+        <category name="Delay">
+            <block type="wait"></block>
+        </category>        
+        <category name="Debuging">
+            <block type="text_print">
+                <value name="TEXT">
+                    <block type="text">
+                        <field name="TEXT">message</field>
+                    </block>
+                </value>
+            </block>
+        </category>
+        <category name="Examples">
+            <block type="start">
+                <value name="state">
+                    <block type="controls_repeat_ext">
+                        <value name="TIMES">
+                            <block type="math_number">
+                                <field name="NUM">10</field>
+                            </block>                           
+                        </value>
+                        <statement name="DO">
+                            <block type="motor">
+                                <field name="motorNumber">1</field>
+                                <field name="motorSpeed">5</field>
+                                <next>
+                                    <block type="wait">
+                                        <field name="seconds">5</field>
+                                        <next>
+                                            <block type="lamp">
+                                                <field name="lampNumber">2</field>
+                                                <field name="state">1</field>
+                                                <next>
+                                                    <block type="motor">
+                                                        <field name="motorNumber">1</field>
+                                                        <field name="motorSpeed">5</field>
+                                                        <field name="motorDirection">1</field>
+                                                        <next>
+                                                            <block type="wait">
+                                                                <field name="seconds">5</field>
+                                                                <next>
+                                                                    <block type="lamp">
+                                                                        <field name="lampNumber">2</field>
+                                                                        <field name="state">0</field> 
+                                                                    </block>
+                                                                </next>
+                                                            </block>
+                                                        </next>                                                        
+                                                    </block>    
+                                                </next>
+                                            </block>
+                                        </next>
+                                    </block>
+                                </next>                                
+                            </block>                                                     
+                        </statement>
+                    </block>
+                                     
+                </value> 
+            </block>
+
+			<block type="start">
+                <value name="state">
+					<block type="motor">
+						<field name="motorNumber">1</field>
+						<field name="motorSpeed">0</field>
+						<field name="motorDirection">0</field>
+						<next>
+							<block type="motor">
+								<field name="motorNumber">2</field>
+								<field name="motorSpeed">0</field>
+								<field name="motorDirection">0</field>
+								<next>
+									<block type="controls_repeat_ext">
+										<value name="TIMES">
+											<block type="math_number">
+												<field name="NUM">10</field>
+											</block>                           
+										</value>
+										<statement name="DO">
+											<block type="motor">
+												<field name="motorNumber">1</field>
+												<field name="motorSpeed">4</field>
+												<field name="motorDirection">1</field>
+												<next>
+													<block type="motor">
+														<field name="motorNumber">2</field>
+														<field name="motorSpeed">4</field>
+														<field name="motorDirection">1</field>
+														<next>
+															<block type="wait">
+																<field name="seconds">1.2</field>
+																<next>
+																	<block type="motor">
+																		<field name="motorNumber">1</field>
+																		<field name="motorSpeed">2</field>
+																		<field name="motorDirection">1</field>
+																		<next>
+																			<block type="motor">
+																				<field name="motorNumber">2</field>
+																				<field name="motorSpeed">2</field>
+																				<field name="motorDirection">0</field>
+																				<next>
+																					<block type="wait">
+																						<field name="seconds">0.5</field>
+																						<next>
+																							<block type="controls_if1">
+																								<value name="IF0">
+																									<block type="digital_logic_compare">																									 
+																									        <field name=A>5</field>
+																									        
+																									        <field name=B>1</field>
+																									    <value>
+																									</block>                          
+																								</value>	
+																								
+																							</block>
+																						</next>
+																					</block>	
+																				</next>
+																			</block>
+																		</next>
+																	</block>	
+																</next>
+															</block>	
+														</next>
+													</block>
+												</next>
+											</block>	
+										</statement>
+									</block>
+								</next>
+							</block>
+						</next>						
+					</block>
+                </value> 
+            </block>			
+        </category>
+    </xml>		
+	<body>
+		<main>
+		    <div class=loadingscreen id=screen> 
+		        <div class=screencontent>
+	                <p>Loading content ...</p>     
+                    <div class=spinner id=loader>               
+                        <span></span>
+                        <span></span>
+                        <span></span>     
+                    </div>
+                </div>            
+            </div>
+            <div class=content id="cont">
+                <div class=clabel>
+                    <p>&#169; Copyright 2017, T. Tr&auml;nkel, F.J. Pal</p>
+                </div>
+                <div class=header>ESP IDE v0.5</div>
+                <div class=ide>
+                    <div class=editor>
+                        <div id="blocklyDiv"></div>
+                    </div>
+                    <div class=console>
+                        <div class=languageselection>
+                            <p>Language:</p>
+                            <select id="languageDropdownId" class="languageDropdown" onchange="myUpdateFunction();">
+                                <option value="JavaScript">Basic</option>
+                                <option selected="selected" value="Dart">C++</option>
+                                <option value="Lua">Interner Code</option>
+                            </select>
+                        </div>
+                        
+                        <pre id=textoutput><code id="textoutputHighlighted" class="language-cpp"></code></pre>                       
+                        <div class=play-button onClick=playButtonPressed()>
+                            <div id=buttonPlay class='button'>
+                            
+                            </div>
+                        </div>  
+                        <div class=stop-button onClick=stopButtonPressed()>
+                            <div></div>
+                        </div>                        
+                        <div class=send-button onClick=sendButtonPressed()>
+                            <div>&#10143;</div>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+		</main>	
+	</body>
+	<script src="prism.js"></script>
+	<script src="blockly_compressed.js"></script>
+	<script src="custom_blocks.js"></script>
+    <script src="blocks_compressed.js"></script>
+    <script src="lua.js"></script>
+    <script src="javascript.js"></script>
+    <script src="dart.js"></script>
+    <script src="math.js"></script>
+	<script src="logic.js"></script>
+	<script src="loops.js"></script>
+	<script src="text.js"></script>	
+    <script src="en.js"></script>
+    <script src="custom_blocks_syntax.js"></script>
+    <script src="dummy.js"></script>    
+    <script>        
+        var workspace = Blockly.inject('blocklyDiv',
+            {toolbox: document.getElementById('toolbox'),
+             zoom:
+                {controls: true,
+                 wheel: true,
+                 startScale: 1.0,
+                 maxScale: 3,
+                 minScale: 0.3,
+                 scaleSpeed: 1.2},
+             trashcan: true});          
+        function myUpdateFunction(event) {
+            var languageDropdown = document.getElementById("languageDropdownId");
+            var languageSelection = languageDropdown.options[languageDropdown.selectedIndex].value;
+            resetLogicCounterVar();
+            resetLoopsCounterVar();
+           
+            var code = Blockly[languageSelection].workspaceToCode(workspace);
+            var codeModified = Prism.highlight(code, Prism.languages.cpp);
+            document.getElementById("textoutputHighlighted").innerHTML = codeModified;
+        }
+        workspace.addChangeListener(myUpdateFunction);        
+        function playButtonPressed() {             
+            var btn = document.getElementById("buttonPlay").getAttribute("class");;
+            if(btn == "button") {
+                document.getElementById("buttonPlay").classList.add("paused");
+                
+                var request = new XMLHttpRequest();
+		        var response = "/start";
+		        				
+		        request.open('GET', response, true);
+		        request.addEventListener('load', function(event) {
+                    if (request.status >= 200 && request.status < 300) {
+                        console.log(request.responseText);
+                    } else {
+                        console.warn(request.statusText, request.responseText);
+                    }
+                    alert(request.responseText);
+                });
+			    request.send(null);	
+            } else {
+                document.getElementById("buttonPlay").classList.remove("paused");
+                
+                var request = new XMLHttpRequest();
+		        var response = "/pause";
+		        				
+		        request.open('GET', response, true);
+		        request.addEventListener('load', function(event) {
+                    if (request.status >= 200 && request.status < 300) {
+                        console.log(request.responseText);
+                    } else {
+                        console.warn(request.statusText, request.responseText);
+                    }
+                    alert(request.responseText);
+                });
+			    request.send(null);	
+            }           		
+        }   
+        function stopButtonPressed() {
+            document.getElementById("buttonPlay").classList.remove("paused");
+            var request = new XMLHttpRequest();
+	        var response = "/stop";
+	        				
+	        request.open('GET', response, true);
+	        request.addEventListener('load', function(event) {
+                if (request.status >= 200 && request.status < 300) {
+                    console.log(request.responseText);
+                } else {
+                    console.warn(request.statusText, request.responseText);
+                }
+                alert(request.responseText);
+            });
+			    request.send(null);	
+        }     
+        function sendButtonPressed() {
+            resetLogicCounterVar();
+            resetLoopsCounterVar();
+			var numberOfBlocks = ""; 
+			
+            var code = Blockly.Lua.workspaceToCode(workspace);
+			console.log("\n");
+            console.log('Generating queue string ...');
+            
+            if(code.includes("#Start;") == true && code.includes("#Stop;") == true) {
+                var startIndex = code.indexOf("#Start;") + 7;
+                var stopIndex = code.indexOf("#Stop;");
+            
+                var codeModified = code.substring(startIndex, stopIndex);
+                
+                codeModified = codeModified.replace(/\n|\s/g, "") + ";";			
+			    var regex = /#/gi, result, indices = [];
+			    
+			    while (result = regex.exec(codeModified)) {
+				    indices.push("" + result.index);
+			    }
+			    numberOfBlocks = indices.length;
+			
+			    console.log("==> " + "Content-Length: " + codeModified.length);
+			    console.log("==> " + "Number of blocks: " + numberOfBlocks);
+			    console.log("==> " + codeModified);
+			
+			    console.log("\n");
+			    console.log("Sending data ...");
+			
+			    var request = new XMLHttpRequest();
+		        var response = "/send";
+		        				
+		        request.open('POST', response, true);
+		        request.addEventListener('load', function(event) {
+                    if (request.status >= 200 && request.status < 300) {
+                        console.log(request.responseText);
+                    } else {
+                        console.warn(request.statusText, request.responseText);
+                    }
+                    alert(request.responseText);
+                });
+			    request.send(codeModified);
+            } else {
+                alert("Please insert a start block first!");
+                console.error("No main block found");
+            }                    	
+        }
+    </script>
+    <script>
+        //document.getElementById('cont').style.display = "none";
+        window.onload = function () {
+            console.log('Content loaded.');
+            document.getElementById('screen').classList.add('hide');
+            setTimeout(function() { document.getElementById('screen').style.display = "none"; }, 1000);            
+            setTimeout(function() { document.getElementById('cont').classList.add('show'); }, 1000); 
+            //document.getElementById('cont').style.display = "block";          
+        }
+    </script>
+</html>
