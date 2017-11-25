@@ -1,7 +1,11 @@
+/*
+Ausgangstreiber für ESP32-Fischertechnik-Anbindung
+Autor: Johannes Marquart
+*/
 #include "ft_ESP32_IOobjects.h"
 
 /*
-//Prototypen zur Simulation fï¿½r VisualStudio
+//Prototypen zur Simulation für VisualStudio
 void ledcAttachPin(int, int) {}
 void ledcSetup(int, int, int) {}
 void ledcWrite(int, int) {}
@@ -10,11 +14,16 @@ void digitalWrite(int, int) {}
 unsigned int digitalRead(unsigned int) { return 0; }
 unsigned int analogRead(unsigned int) { return 0; }
 void delay(double) {}
-//Ende der Prototypen fï¿½r VS
+//Ende der Prototypen für VS
 */
 
 Motor::Motor()
 {
+	//Abschalten des Motortreibers, welcher von diesem Objekt versorgt wird.
+	//Evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
+	pinMode(PIN_M_INH, OUTPUT);
+	digitalWrite(PIN_M_INH, LOW);
+	
 	mMotorNr = 0;
 	mPortNrPWM = 0;
 	mPortNrDir = 0;
@@ -24,17 +33,25 @@ Motor::Motor()
 
 Motor::Motor(unsigned int motorNr)
 {
+	//Abschalten des Motortreibers, evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
+	pinMode(PIN_M_INH, OUTPUT);
+	digitalWrite(PIN_M_INH, LOW);
+	
+	//Initialisieren des Motorobjektes
 	mMotorNr = motorNr;
-	mPortNrPWM = PORT_M_PWM[motorNr];
-	mPortNrDir = PORT_M_DIR[motorNr];
+	
+	mPortNrPWM = PORT_M_PWM[mMotorNr];
+	mPortNrDir = PORT_M_DIR[mMotorNr];
 	mRechtslauf = true;
 	mDrehzahl = 0;
 
 	//Zuweisen PWM-Generator zu Port
-	//pinMode(mPortNrPWM, OUTPUT);	//Port fï¿½r PWM
-	ledcAttachPin(mPortNrPWM, motorNr);	//Port ID, PWM-Generator Nr.
-	ledcSetup(motorNr, 12000, 8);	// 12 kHz PWM, 8-bit resolution (0..255)
-	pinMode(mPortNrDir, OUTPUT);	//Port fï¿½r Richtungsangabe
+	ledcAttachPin(mPortNrPWM, mMotorNr);	//Pin-Nr, PWM-Generator Nr
+	ledcSetup(mMotorNr, 21700, 8);	//PWM-Generator Nr, 21.7 kHz PWM, 8-bit resolution (0..255)
+	pinMode(mPortNrDir, OUTPUT);	//Pin-Nr für Richtungsangabe, Ausgang
+	
+	digitalWrite(mPortNrDir, HIGH);	//frühzeitiges Definieren des Dir-Pins
+	ledcWrite(mMotorNr, 0);	//frühzeitiges Definieren des PWM-Generators (PWM-Generator Nr., PWM-Wert (0..255))
 	
 }
 
@@ -43,7 +60,7 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 	mRechtslauf = rechtslauf;
 	mDrehzahl = drehzahl;
 	
-	//Serial.begin(9600);
+	//Serial.begin(9600); -> sollte in der aufrufenden Instanz schon initialisiert sein
 	Serial.print("Motor ");
 	Serial.print(mMotorNr);
 	Serial.print(" dreht in Richtung ");
@@ -51,7 +68,6 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 	Serial.print(" mit Drehzahl ");
 	Serial.println(mDrehzahl);
 
-	
 	//Berechnen der PWM-Werte
 	int drehzahl_pwm;
 	if (mDrehzahl < 1)
@@ -67,7 +83,7 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 		drehzahl_pwm = mDrehzahl * 256 / 8;
 	}
 
-	//Zuweisen der Richtung an den richtigen Port entsprechend der Motornr.
+	//Zuweisen der Richtung an den richtigen Pin entsprechend der Motornr.
 	if (mRechtslauf)
 	{
 		digitalWrite(mPortNrDir, HIGH);
@@ -75,12 +91,14 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 	else
 	{
 		digitalWrite(mPortNrDir, LOW);
-		//!!! Unbedingt im Datenblatt des Motortreibers nachsehen, wie PWM und Richtung zusammenhï¿½ngen
-		drehzahl_pwm = 255 - drehzahl_pwm;	//wenn der Motor rï¿½ckwï¿½rts lï¿½uft, ist die pwm invertiert (255 = min, 0 = max)
+		//!!! Unbedingt im Datenblatt des Motortreibers nachsehen, wie PWM und Richtung zusammenhängen !!!
+		drehzahl_pwm = 255 - drehzahl_pwm;	//wenn der Motor rückwärts läuft, ist die PWM invertiert (255 = min, 0 = max)
 	}
 
 	//Zuweisen des PWM-Werts an den richtigen Port entsprechend der Motornr.
 	ledcWrite(mMotorNr, drehzahl_pwm);
+	
+	digitalWrite(PIN_M_INH, HIGH);	//Einschalten Motortreiber
 	
 	Serial.print("Dir: ");
 	Serial.print(mPortNrDir);
@@ -92,21 +110,47 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
 
 void Motor::reRun()
 {
-	setValues(mRechtslauf, mDrehzahl);
+	if(mDrehzahl > 0)
+	{
+		setValues(mRechtslauf, mDrehzahl);
+	}
 }
 
 Lampe::Lampe()
 {
+	//Abschalten des Lampentreibers, welcher von diesem Objekt versorgt wird.
+	//Evtl. noch undefinierte Pins können so kein falsches Signal an den Lampentreiber geben
+	pinMode(PIN_L_INH, OUTPUT);
+	digitalWrite(PIN_L_INH, LOW);
+	
 	mLampeNr = 0;
+	mPortNrPWM = 0;
 	mHelligkeit = 0;
 }
 
 Lampe::Lampe(unsigned int lampeNr)
 {
+	//Abschalten des Motortreibers, evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
+	pinMode(PIN_L_INH, OUTPUT);
+	digitalWrite(PIN_L_INH, LOW);
+	
+	//Initialisieren des Lampenobjektes
 	mLampeNr = lampeNr;
+	
+	mPortNrPWM = PORT_L_PWM[mLampeNr];
 	mHelligkeit = 0;
 
 	//Zuweisen des PWM-Generators an einen Port entsprechend der Lampennummer...
+	ledcAttachPin(mPortNrPWM, mLampeNr);	//Pin-Nr, PWM-Generator Nr
+	ledcSetup(mLampeNr, 21700, 8);	//PWM-Generator Nr, 21.7 kHz PWM, 8-bit resolution (0..255)
+	pinMode(PORT_M_DIR[mLampeNr], OUTPUT);	//Pin-Nr für "Richtungsangabe", Ausgang
+	/*da hier Lampen am selben Treiber angeschlossen sind wie die Motoren, benötigen sie eine "Richtung"
+	für eine korrekte Interpretation der PWM-Signale
+	*/
+	
+	digitalWrite(PORT_M_DIR[mLampeNr], HIGH);	//frühzeitiges Definieren des Dir-Pins
+	ledcWrite(mLampeNr, 0);	//frühzeitiges Definieren des PWM-Generators (PWM-Generator Nr., PWM-Wert (0..255))
+	
 }
 
 void Lampe::setValues(unsigned int helligkeit)
@@ -117,7 +161,6 @@ void Lampe::setValues(unsigned int helligkeit)
 	Serial.print(mLampeNr);
 	Serial.print(" leuchtet mit Helligkeit ");
 	Serial.println(mHelligkeit);
-	
 	
 	//Berechnen der PWM - Werte
 	int helligkeit_pwm;
@@ -136,11 +179,22 @@ void Lampe::setValues(unsigned int helligkeit)
 
 	//Zuweisen des PWM-Werts an den richtigen Port entsprechend der Lampennummer
 	ledcWrite(mLampeNr, helligkeit_pwm);
+	digitalWrite(PORT_M_DIR[mLampeNr], HIGH);	//Richtungsangabe, siehe Beschreibung im Konstruktor
+	
+	digitalWrite(PIN_M_INH, HIGH);	//Einschalten Lampentreiber
+	
+	Serial.print("PWM: ");
+	Serial.print(mPortNrPWM);
+	Serial.print(" Val: ");
+	Serial.println(helligkeit_pwm);
 }
 
 void Lampe::reRun()
 {
-	setValues(mHelligkeit);
+	if(mHelligkeit > 0)
+	{
+		setValues(mHelligkeit);
+	}
 }
 
 DigitalAnalogIn::DigitalAnalogIn()
@@ -152,19 +206,18 @@ DigitalAnalogIn::DigitalAnalogIn(unsigned int inputNummer)
 {
 	mInputNummer = inputNummer;
 	mInputPortNr = PORT_IN[mInputNummer];
-	//pinMode(mInputPortNr, INPUT_PULLUP);
 }
 
 unsigned int DigitalAnalogIn::getValueDigital()
 {
-	pinMode(mInputPortNr, INPUT_PULLUP);
-	bool eingabe = !digitalRead(mInputPortNr);
+	pinMode(mInputPortNr, INPUT_PULLUP);	//Pin-Modus einrichten: Input mit Pull-Up Widerstand
+	bool eingabe = !digitalRead(mInputPortNr);	//Inverse Logik: Schalter gedrückt = 1 (= Port liegt auf Masse)
 	return (unsigned int) eingabe;
 }
 
 unsigned int DigitalAnalogIn::getValueAnalog()
 {
-	pinMode(mInputPortNr, INPUT);
+	pinMode(mInputPortNr, INPUT);	//Pin-Modus einrichten: Input ohne Pull-Up Widerstand
 	unsigned int eingabe = analogRead(mInputPortNr);
 	return eingabe;
 }
