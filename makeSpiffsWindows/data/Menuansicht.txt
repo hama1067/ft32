@@ -1,0 +1,6 @@
+Aktoren -> Motoren / Lampen
+Schleifen -> While (2x, analog/digital Bdg.), 1x repeat n-mal Block
+Verzweigung -> IF abfragen nach analog/digital Wert (2x IF Blöcke)
+
+Delay -> Warteblock (Seconds.MilliSec.)
+Ausgabe -> ?
