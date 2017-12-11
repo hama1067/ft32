@@ -2,7 +2,7 @@
 
 <p align="center"><img width="75%" src="./demo.png"></p>
 
-Fischertechnik TXT Controller replacement based on ESP32 microcontroller with a fancy web programmable HMI. The broswer IDE is rest upon [cody++](https://github.com/josephpal/cody-pp/blob/master/README.md) version 0.5 (once ESP IDE). 
+Fischertechnik TXT Controller replacement based on ESP32 microcontroller with a fancy web programmable HMI. The broswer IDE is rest upon [cody++](https://github.com/josephpal/cody-pp) version 0.5 (once ESP IDE). 
 
 If you want to checkout the current cody++ web IDE version 0.5, please visit the demo [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/data/webIDEwebversion-0.5/index.html). The latest version is avaiable [here](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/data/webIDEwebversion-1.0/index.html).
 
