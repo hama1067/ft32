@@ -11,7 +11,7 @@ struct commonElement
 	unsigned char ID = 0;	//'M', 'A', 'D', ...
 	commonElement* nextElement;	//nächstes reguläres Element der Kette
 	commonElement* prevElement;	//vorhergehendes reguläres Element der Kette
-	commonElement* jumpElement = NULL;	//zeigt bei: If -> EndIf, While -> EndWhile+1, EndWhile -> While
+	commonElement* jumpElement = NULL;	//zeigt bei: If -> Else+1/EndIf+1, Else -> EndIf+1, While -> EndWhile+1, EndWhile -> While
 	unsigned char type = 0;	//Art des Inputs "A"/"D" bei If und (normalem) While, "Z" bei Zählschleifen
 	unsigned char portNr = 0;	//0..7 bei Input (auch in If/While), 0..3 bei Aktor
 	unsigned char compare_direction = 0;	//Vergleichsoperator bei If/While, Richtung Motor

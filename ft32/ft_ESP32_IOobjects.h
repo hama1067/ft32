@@ -44,13 +44,13 @@ class Lampe
 {
 public:
 	Lampe();
-	Lampe(unsigned int);	//Konstruktor, Lampe-Nr (0..3), weist zu: Pin-Nr für PWM
+	Lampe(unsigned int);	//Konstruktor, Lampe-Nr (0..7), weist zu: Pin-Nr für PWM
 	void setValues(unsigned int);	//neue Lampenwerte setzen (Aktiv, Helligkeit)
 	void reRun();	//bei Aufruf werden erneut die Pins und PWM mit den Attributen gesetzt
 private:
-	unsigned int mLampeNr;	//LampenNr 0..3, wird bei Erstellung des Objekts angelegt
+	unsigned int mLampeNr;	//LampenNr 0..7, wird bei Erstellung des Objekts angelegt
 	unsigned int mPortNrPWM;	//Portnummer für PWM, wird bei Erstellung des Objekts zugewiesen
-	unsigned int mHelligkeit;	//aktuelle Helligkeit (von 0 bis 7?)
+	unsigned int mHelligkeit;	//aktuelle Helligkeit (von 0 bis 8)
 };
 
 class Encoder

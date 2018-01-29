@@ -78,7 +78,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			ustrPos++;	//Zähler auf If-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			break;
-		case 'J':	//EndIf
+		case 'E':	//Else
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwärts nach dem zugehörigen If
 			foundRootID = false;
@@ -99,6 +99,29 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 				qCreateError = true;
 				qCreateErrorID = 5; //Fehler, kein passendes If gefunden
 				Serial.println("Fehler, kein passendes If gefunden");
+			}
+			break;
+		case 'J':	//EndIf
+			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
+			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwärts nach dem zugehörigen Else oder If
+			foundRootID = false;
+			while (!foundRootID && (searchPtr != startPtr))	//solange kein passendes If gefunden und der Anfang nicht erreicht wurde
+			{
+				if (((searchPtr->ID == 'I') || (searchPtr->ID == 'E')) && (searchPtr->rootID == createPtr->rootID))	//If oder Else gefunden und passende rootID
+				{
+					searchPtr->jumpElement = createPtr;	//Sprungzeiger in If- oder Else-Element legen
+					foundRootID = true;	//passendes If oder Else wurde gefunden
+				}
+				else
+				{
+					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgänger
+				}
+			}
+			if (!foundRootID)	//Kein passendes If oder Else gefunden
+			{
+				qCreateError = true;
+				qCreateErrorID = 5; //Fehler, kein passendes If oder Else gefunden
+				Serial.println("Fehler, kein passendes If oder Else gefunden");
 			}
 			break;
 		case 'W':	//While
