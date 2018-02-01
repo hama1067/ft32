@@ -54,10 +54,29 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			break;
 		case 'S':	//Warten
 			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zähler auf letzte Ziffer legen
-			ustrPos++;	//Zähler auf Punkt legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, '.');	//auf Punkt prüfen
-			ustrPos++;	//Zähler auf Millisekunden legen
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zähler auf letzte Ziffer legen
+			ustrPos++;	//Zähler auf (eventuellen) Punkt legen
+			if ('.' == uestring.charAt(strCounter))	//Prüfen ob Nachkommastellen (und der Trenn-Punkt) vorhanden sind
+			{
+				//checkChar( ~ ,'.'); hier nicht notwendig, Prüfung oben erfolgt
+				int ustrPosAlt = ustrPos;
+				ustrPos++;	//Zähler auf Millisekunden legen
+				unsigned int val_ms = stoi_ft(uebergabestr, ustrPos);	//Millisekunden auslesen, Zähler auf letzte Ziffer legen
+				while (val_ms > 100)	//zu lange Nachkommastellen werden auf 2 Stellen gekürzt
+				{
+					val_ms = val_ms / 10;
+				}
+				if (ustrPos - ustrPosAlt < 2)	//einstellige Nachkommastellen werden auf 2 Stellen verlängert (1->10)
+				{
+					val_ms = val_ms * 10;
+					//Hässlich, aber momentan einzige Lösung
+				}
+				createPtr->val_pwm_timems_loop = val_ms;
+			}
+			else	//keine Nachkommastellen (bzw. kein Punkt) vorhanden
+			{
+				createPtr->val_pwm_timems_loop = 0;	//Millisekunden = 0
+				ustrPos--;	//Zähler zurücklegen auf letzte Ziffer der Sekunden
+			}
 			break;
 		case 'I':	//If
 			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Prüfung) eingtragen
@@ -191,11 +210,11 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 void queue_delete(commonElement*& startPtr, commonElement*& endPtr)
 {
 	Serial.println("Queue loeschen...");
-	commonElement* workPtr = startPtr->nextElement;
-	while (workPtr != endPtr)
+	commonElement* workPtr = startPtr->nextElement;	//Pointer zeigt auf 1. Element der Queue (nach Start)
+	while (workPtr != endPtr)	//Solange das Ende nicht erreicht ist
 	{
-		workPtr = workPtr->nextElement;
-		delete workPtr->prevElement;
+		workPtr = workPtr->nextElement;	//Zeiger auf nächstes Element legen
+		delete workPtr->prevElement;	//löschen des vorherigen Elements
 	}
 	Serial.println("Queue geloescht...\n");
 }
@@ -203,13 +222,19 @@ void queue_delete(commonElement*& startPtr, commonElement*& endPtr)
 int stoi_ft(String& uestring, int& strcounter)
 {
 	String blockstr = "";	//Hilfsstring, speichert die einzulesende Zahl
-	blockstr += uestring.charAt(strcounter);	//Erste Ziffer einlesen
-	while (isDigit(uestring.charAt(strcounter+1)))	//nächstes Zeichen ist eine Ziffer?
+	while (isDigit(uestring.charAt(strcounter)))	//dieses Zeichen ist eine Ziffer?
 	{
-		strcounter++;	//counter auf dieses Zeichen legen
 		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhängen
+		strcounter++;	//counter auf nächstes Zeichen legen
 	}
-	return blockstr.toInt();	//gibt es unter Arduino
+	strcounter--;	//counter auf letzte Ziffer zurücklegen (Annahme: strcounter wird nicht <0)
+	//wenn keine Ziffer eingelesen wurde, wird counter auf letztes Zeichen zurückgelegt (erforderlich für queue_creator)
+	unsigned int val = 0;	//wenn keine Ziffer gefunden wurde: 0 zurückgeben
+	if (blockstr.length() > 0)	//wenn mindestens eine Ziffer angehängt wurde
+	{
+		val = blockstr.toInt();	//gibt es unter Arduino
+	}
+	return val;
 }
 
 //Nur für Debugging beim Erstellen der Queue:
