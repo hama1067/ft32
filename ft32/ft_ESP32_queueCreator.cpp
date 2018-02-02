@@ -55,7 +55,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 		case 'S':	//Warten
 			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zähler auf letzte Ziffer legen
 			ustrPos++;	//Zähler auf (eventuellen) Punkt legen
-			if ('.' == uestring.charAt(strCounter))	//Prüfen ob Nachkommastellen (und der Trenn-Punkt) vorhanden sind
+			if ('.' == uebergabestr.charAt(ustrPos))	//Prüfen ob Nachkommastellen (und der Trenn-Punkt) vorhanden sind
 			{
 				//checkChar( ~ ,'.'); hier nicht notwendig, Prüfung oben erfolgt
 				int ustrPosAlt = ustrPos;
