@@ -62,7 +62,8 @@ void SW_queue::SW_work(SHM* mSHM)
 
 	//Abarbeiten des Programms
 	qWorkError = queueWorker(startPtr, endPtr, mMotorArray, mLampeArray, mDAIn, mSHM);  //Übergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
-  
+
+  Serial.println("qWorkError: " + qWorkError);  
 	//Queue löschen
 	queue_delete(startPtr, endPtr);
 	

@@ -38,6 +38,16 @@ void CSPIFFS::listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 	}
 }
 
+bool CSPIFFS::fileExists(fs::FS &fs, const char * path) {
+  File file = fs.open(path);
+  if (!(file && !file.isDirectory())) {
+    //Serial.println("Failed to open file.");
+    return false;
+  } else {
+    return true;
+  }
+}
+
 void CSPIFFS::readFile(fs::FS &fs, const char * path) {
 	Serial.printf("Reading file: %s\n", path);
 
@@ -143,31 +153,6 @@ void CSPIFFS::testFileIO(fs::FS &fs, const char * path){
     file.close();
 }
 
-void CSPIFFS::LoadWebFile(fs::FS &fs, const char * path, String Data) {
-	File file = fs.open(path);
-  String output = "";
-  
-	for(int j = 0; j < file.size(); j++) {
-    output += (char)file.read();
-  }
-  
-  if (Data == "HTML")
-    this->HTML = output;
-  if (Data == "CSS")
-    this->CSS = output;
-  if (Data == "JS")
-    this->JS = output;
-}
-
-String CSPIFFS::GetWebPage(String Web) {
-  if (Web == "HTML")
-    return HTML;
-  if (Web == "CSS")
-    return CSS;
-  if (Web == "JS")
-    return JS;
-}
-
 String CSPIFFS::getFile(fs::FS &fs, const char * path) {
   File file = fs.open(path);
   String output = "";
@@ -182,8 +167,8 @@ String CSPIFFS::getFile(fs::FS &fs, const char * path) {
 void CSPIFFS::printFileToClient(fs::FS &fs, const char * path, WiFiClient mClient) {
   File file = fs.open(path);
   constexpr int BUFF_SIZE=2048;
-   char buffer[BUFF_SIZE];
-
+  char buffer[BUFF_SIZE];
+  
   for(int block=0;block<file.size()/BUFF_SIZE;block++)
   {
       for(int j = 0; j <BUFF_SIZE-1; j++) {
@@ -199,5 +184,67 @@ void CSPIFFS::printFileToClient(fs::FS &fs, const char * path, WiFiClient mClien
   }
   buffer[(file.size()%BUFF_SIZE)+file.size()/BUFF_SIZE]='\0';
   mClient.print(buffer);
+}
+
+void CSPIFFS::printFileToClient2(fs::FS &fs, const char * path, WiFiClient *mClient) {
+  /*File file = fs.open(path);
+
+  for(int j = 0; j < file.size(); j++) {
+    mClient.print((char)file.read());
+  }*/
+  
+  /*File file = fs.open(path);
+  constexpr int BUFF_SIZE=2048;
+  char buffer1[BUFF_SIZE];
+  char buffer2[BUFF_SIZE];
+  boolean writeFirst = true;
+  
+  for(int block=0;block<file.size()/BUFF_SIZE;block++)
+  {
+      for(int j = 0; j < BUFF_SIZE; j++) {
+        //mClient.print((char)file.read());
+        if (writeFirst) {
+          buffer1[j]=(char)file.read();
+        } else {
+          buffer2[j] = (char)file.read();
+        }
+      }
+
+      //::mClient.print(writeFirst ? buffer : buffer2);
+      if(writeFirst) {
+        mClient.print(buffer1);
+      } else {
+        mClient.print(buffer2);
+      }
+
+      writeFirst = ! writeFirst;
+  }*/
+
+  File file = fs.open(path);
+  constexpr int BUFF_SIZE=2048;
+  String buffer;
+  
+  for(int block=0;block<file.size()/BUFF_SIZE;block++) {
+      for(int j = 0; j < BUFF_SIZE; j++) {
+        //mClient.print((char)file.read());
+        buffer += (char)file.read();
+      }
+      
+      mClient->print(buffer);
+      buffer = "";
+  }
+
+  buffer = "";
+  
+  for(int bytes_read=0;bytes_read<file.size()%BUFF_SIZE;bytes_read++) {
+    buffer += (char)file.read();
+  }
+  
+  mClient->print(buffer);
+}
+
+int CSPIFFS::getFileSize(fs::FS &fs, const char * path) {
+  File file = fs.open(path);
+  return file.size();
 }
 

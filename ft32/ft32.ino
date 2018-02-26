@@ -1,19 +1,56 @@
-#include "ESP32Webserver.h"
+#include "AssetHandler.h"
+#include "WebsocketHandler.h"
 #include "ft_ESP32_SHM.h"
+#include "ft_ESP32_SW_Queue.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-ESP32Webserver * nServer;
+AssetHandler * nAssetHandler;
+WebsocketHandler *wsHandler;
 SHM * ptrSHM;
+SW_queue mySW_queue;
+
+Adafruit_SSD1306 display(4);
+
+void initQueue_static(void* arg) {
+    SHM *pSHM=(SHM*) arg;
+    while(1)
+    {
+      if(true==pSHM->commonStart)
+      {
+        mySW_queue.SW_work(pSHM);
+      }
+      else
+      {
+        delay(1);
+      }
+    }
+    vTaskDelete(NULL);
+}
 
 void setup() {
     Serial.begin(115200);
     ptrSHM= new SHM;
-    Serial.print("setup:");
-    //Serial.println(ptrSHM->commonStart);
-    nServer = new ESP32Webserver(ptrSHM);
+    nAssetHandler = new AssetHandler();
+    wsHandler = new WebsocketHandler(ptrSHM);
+    
+    wsHandler->openWebsocket();
+
+    Serial.println("[main] Starting queue task");
+
+    xTaskCreatePinnedToCore(
+      initQueue_static,   /* Function to implement the task */
+      "initQueue_static", /* Name of the task */
+      4096,      /* Stack size in words */
+      (void*)ptrSHM,       /* Task input parameter */
+      0,          /* Priority of the task */
+      NULL,       /* Task handle. */
+      1);  /* Core where the task should run */
 }
 
 void loop() {
-    nServer->handleClient();
+    nAssetHandler->handleAssetRequests();
+    wsHandler->handleWebsocketRequests();
 }
 
 

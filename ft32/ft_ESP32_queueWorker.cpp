@@ -1,21 +1,15 @@
 #include "ft_ESP32_queueWorker.h"
-//Wenn das Display zur Analoganzeige benutzt wird:
-#include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+extern Adafruit_SSD1306 display;
 
 bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,MOTOR_QTY>& mMotorArray, array<Lampe, LAMP_QTY>& mLampeArray, array<DigitalAnalogIn, DAIN_QTY>& mDAIn, SHM* mSHM)
-{
-	//Wenn das Display zur Analoganzeige benutzt wird:
-	Adafruit_SSD1306 display(4);
-	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
-	display.clearDisplay();
-	display.setTextColor(WHITE);
-	
+{	
 	Serial.println("Queue abarbeiten...");	//Debug-Ausgabe... alle Seriellen Ausgaben sind zur Pr�fung des Programmablaufs in der Konsole
 	
 	commonElement* workPtr = startPtr->nextElement;
 
-	while ((workPtr != endPtr) && !mSHM->commonStopp)	//wiederholen bis das letzte QE erreicht oder Stopp gedr�ckt wurde
+  // (workPtr != endPtr) && !mSHM->commonStopp
+	while ((workPtr != endPtr) && mSHM->commonStart)	//wiederholen bis das letzte QE erreicht oder Stopp gedr�ckt wurde
 	{
 
 		int waitTime = 0;	//Variable zur Wartezeit [ms]
@@ -265,7 +259,8 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 				}
 				do {	//in Schleife auf Aufhebung des Pausezustandes warten
 					delay(10);	//10ms warten (schohnt CPU)
-				} while (mSHM->commonPause && !mSHM->commonStopp);	//warten auf Aufhebung der Pause oder auf Stopp
+				} while (mSHM->commonPause && mSHM->commonStart);	//warten auf Aufhebung der Pause oder auf Stopp
+       
 				Serial.println("Pause beendet");
 				//IO-Objekte auf kopierte Werte zur�cksetzen
 				for (int i = 0; i < mMotorArray.size(); i++)
@@ -276,7 +271,8 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 					//mLampeArray[i].reRun();
 				}
 			}
-		} while (waitTime > 0 && !mSHM->commonStopp);	//warten auf Ende der Pausenzeit oder auf Stopp
+		} while (waitTime > 0 && mSHM->commonStart);	//warten auf Ende der Pausenzeit oder auf Stopp
+    //waitTime > 0 && !mSHM->commonStopp
 		
 	}
 
@@ -290,6 +286,11 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 		mLampeArray[i].setValues(0);
 	}
 
+  mSHM->commonStart=false;
+  mSHM->commonPause=false;
+  //mSHM->commonStopp=false;
+  mSHM->running=false;
+  
 	Serial.println("Ausgaenge zurueckgesetzt.");
 	
 	return false;
