@@ -20,7 +20,7 @@ struct commonElement
 	unsigned short rootID = 0;	//fortlaufende ID für If/While (um die EndIf und EndWhile korrekt zuordnen zu können)
 };
 
-//Fkt zur Prüfung eines Stringelements auf ein bestimmtes Zeichen, falls nicht, wird errorFlag==true
+//Fkt zur Prüfung eines Stringelements auf ein bestimmtes Zeichen
 //notwendig für Debugging während Entwicklung
 void checkChar(bool& errorFlag, int& errorID, String& uestring, int& strCounter, char zeichen);
 
@@ -30,7 +30,7 @@ int stoi_ft(String& uestring, int& strCounter);
 //Fkt zur Erstellung der Queue aus dem Uebergabestring
 bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& uebergabestr);
 
-//Fkt zum Löschen der Queue (mit Ausnahme von startPtr und endPtr)
+//Fkt zur Löschung der Queue (mit Ausnahme von startPtr und endPtr)
 void queue_delete(commonElement*& startPtr, commonElement*& endPtr);
 
 #endif
