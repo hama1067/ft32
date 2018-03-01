@@ -1,13 +1,16 @@
 #include "AssetHandler.h"
 #include "WebsocketHandler.h"
+#include "NetworkHandler.h"
 #include "ft_ESP32_SHM.h"
 #include "ft_ESP32_SW_Queue.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-AssetHandler * nAssetHandler;
+AssetHandler *nAssetHandler;
 WebsocketHandler *wsHandler;
-SHM * ptrSHM;
+NetworkHandler nHandler;
+
+SHM *ptrSHM;
 SW_queue mySW_queue;
 
 Adafruit_SSD1306 display(4);
@@ -31,10 +34,10 @@ void initQueue_static(void* arg) {
 void setup() {
     Serial.begin(115200);
     ptrSHM= new SHM;
+
+    nHandler.createUniqueAP("Espap", "12345678");
     nAssetHandler = new AssetHandler();
     wsHandler = new WebsocketHandler(ptrSHM);
-    
-    wsHandler->openWebsocket();
 
     Serial.println("[main] Starting queue task");
 
@@ -50,7 +53,7 @@ void setup() {
 
 void loop() {
     nAssetHandler->handleAssetRequests();
-    wsHandler->handleWebsocketRequests();
+    wsHandler->handleWebSocketRequests();
 }
 
 

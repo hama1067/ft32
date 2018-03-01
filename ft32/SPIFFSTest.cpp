@@ -175,7 +175,7 @@ void CSPIFFS::printFileToClient(fs::FS &fs, const char * path, WiFiClient mClien
         //mClient.print((char)file.read());
         buffer[j]=(char)file.read();
       }
-      buffer[BUFF_SIZE]='\0';
+      buffer[BUFF_SIZE-1]='\0';
       mClient.print(buffer);
   }
   for(int bytes_read=0;bytes_read<=file.size()%BUFF_SIZE+file.size()/BUFF_SIZE;bytes_read++)

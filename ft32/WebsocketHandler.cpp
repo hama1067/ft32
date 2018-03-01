@@ -11,7 +11,7 @@ void webSocketTask(void* params) {
   String *payload = new String();
   String *identifier = new String();
 
-  if(wsHandler->addWebsocketClient(nClient, nWebSocketServer)) {
+  if(wsHandler->addWebSocketClient(nClient, nWebSocketServer)) {
     if(nClient->connected() && nWebSocketServer->handshake(*nClient)) {
       Serial.print("[ws] Handshake with client ");
       Serial.print(wsHandler->getClientID(nClient));
@@ -45,7 +45,7 @@ void webSocketTask(void* params) {
             Serial.println("[ws] Payload: " + ptrSHM->webData.data);
             
             //nWebSocketServer->sendData("ready");
-            wsHandler->sendWebsocketMessage("ready");
+            wsHandler->sendWebSocketMessage("ready");
           } else if(*identifier == "start") {
             Serial.println("[ws] start");
             ptrSHM->commonStart = 1;
@@ -53,16 +53,16 @@ void webSocketTask(void* params) {
             //ptrSHM->commonStopp = 0; //old
 
             //nWebSocketServer->sendData("running");
-            wsHandler->sendWebsocketMessage("running");    
+            wsHandler->sendWebSocketMessage("running");    
           } else if(*identifier == "pause") {
             Serial.println("[ws] pause");
 
             if(ptrSHM->running == true && ptrSHM->commonPause == 1) {
               //nWebSocketServer->sendData("Error: Already paused");
-              wsHandler->sendWebsocketMessage("Error: Already paused");
+              wsHandler->sendWebSocketMessage("Error: Already paused");
             } else {
               //nWebSocketServer->sendData("paused");
-              wsHandler->sendWebsocketMessage("paused");
+              wsHandler->sendWebSocketMessage("paused");
               ptrSHM->commonPause = 1;
             }
 
@@ -75,7 +75,7 @@ void webSocketTask(void* params) {
             //ptrSHM->commonStopp = 1; //old
 
             //nWebSocketServer->sendData("stopped");
-            wsHandler->sendWebsocketMessage("stopped");
+            wsHandler->sendWebSocketMessage("stopped");
           }
         }
       
@@ -87,7 +87,7 @@ void webSocketTask(void* params) {
     delete nClient;
   }
   
-  wsHandler->removeWebsocketClient(nClient);
+  wsHandler->removeWebSocketClient(nClient);
 
   delete data;
   delete payload;
@@ -103,7 +103,7 @@ void eventListener(void* params) {
   bool last = false;
   bool current = false;
 
-  Serial.println("[ws] Starting Listener ...");
+  Serial.println("[ws] Starting event listener ...");
   
   while(1) {
     current = ptrSHM->running;
@@ -112,7 +112,7 @@ void eventListener(void* params) {
       Serial.println("changed");
     }
     if(last != current && current == 0) {
-      wsHandler->sendWebsocketMessage("stopped");
+      wsHandler->sendWebSocketMessage("stopped");
     }
 
     last = current;
@@ -122,9 +122,8 @@ void eventListener(void* params) {
 
 WebsocketHandler::WebsocketHandler(SHM *pSHM) {
   Serial.println();
-  Serial.print("[ws] Creating SHM container with status ");
+  Serial.print("[ws] Joining SHM container with status ");
   mSHM=pSHM;
-  Serial.println(mSHM->commonStart);
   
   addClient.unlock();
   removeClient.unlock();
@@ -149,18 +148,20 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     0,                /* Priority of the task */
     NULL,             /* Task handle. */
     1);               /* Core where the task should run */
+
+  webSocketServer->begin();
 }
 
 WebsocketHandler::~WebsocketHandler() {
-  
+  delete webSocketConnections;
+  delete webSocketServer;
 }
 
-bool WebsocketHandler::addWebsocketClient(WiFiClient * pClient, WebSocketServer *nWebSocketServer) {
+bool WebsocketHandler::addWebSocketClient(WiFiClient * pClient, WebSocketServer *nWebSocketServer) {
   addClient.lock();
   
   if(clientCount >= MAXCLIENTS) {
     addClient.unlock();
-    return false;
   } else {
     for(int i = 0; i < MAXCLIENTS; i++) {
       if(webSocketConnections[i] == NULL) {
@@ -174,9 +175,11 @@ bool WebsocketHandler::addWebsocketClient(WiFiClient * pClient, WebSocketServer 
       }
     }
   }
+
+  return false;
 }
 
-bool WebsocketHandler::removeWebsocketClient(WiFiClient * pClient) {
+bool WebsocketHandler::removeWebSocketClient(WiFiClient * pClient) {
   removeClient.lock();
   
   for(int i = 0; i < MAXCLIENTS; i++) {
@@ -200,7 +203,7 @@ bool WebsocketHandler::removeWebsocketClient(WiFiClient * pClient) {
   return false;
 }
 
-void WebsocketHandler::sendWebsocketMessage(String message) {
+void WebsocketHandler::sendWebSocketMessage(String message) {
   sendData.lock();
 
   for(int i = 0; i < MAXCLIENTS; i++) {
@@ -228,9 +231,10 @@ int WebsocketHandler::getClientID(WiFiClient * pClient) {
   }
   
   clientID.unlock();
+  return -1;
 }
 
-void WebsocketHandler::handleWebsocketRequests() {
+void WebsocketHandler::handleWebSocketRequests() {
   WiFiClient* client = new WiFiClient(webSocketServer->available());
   
   if (*client) {
@@ -250,7 +254,7 @@ void WebsocketHandler::handleWebsocketRequests() {
   delay(100);
 }
 
-void WebsocketHandler::openWebsocket() {
+void WebsocketHandler::openWebSocket() {
   Serial.println("[ws] Opening websocket ports...");
   webSocketServer->begin();
 }

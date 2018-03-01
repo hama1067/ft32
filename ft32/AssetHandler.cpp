@@ -10,56 +10,8 @@
 #include "AssetHandler.h"
 
 AssetHandler::AssetHandler(){
-    Serial.println();
-    Serial.println("[ash] Configuring access point...");
-    
     mServer = new WiFiServer(80);
          
-    String test_ssid=mSsid;
-    test_ssid=test_ssid+String((unsigned short)ESP.getEfuseMac());
-    int numSsid = WiFi.scanNetworks();
-    bool ssidExist;
-    do
-    { 
-     ssidExist=false;
-     unsigned short rnd=1;
-     for (int thisNet = 0; thisNet < numSsid; thisNet++) 
-     {
-      if(WiFi.SSID(thisNet)==test_ssid)
-      {
-        ssidExist=true;
-        test_ssid=mSsid+String((unsigned short)ESP.getEfuseMac()+rnd);
-        ++rnd;
-      }
-     }
-    }while(ssidExist);
-    
-    mSsid=test_ssid.c_str();
-    Serial.print("[ash] ssid: ");
-    Serial.println(mSsid);
-    
-    WiFi.softAP(mSsid, mPassword);
-
-    IPAddress myIP = WiFi.softAPIP();
-    mServerIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
-    Serial.println("[ash] IP: " + mServerIP);
-
-    /*Serial.print("[ash] Connecting to ");
-    Serial.println(mSsid);
-
-    WiFi.begin(mSsid, mPassword);
-
-    Serial.print("[ash] ");
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-
-    Serial.println("");
-    Serial.println("[ash] WiFi connected");
-    Serial.print("[ash] IP address: ");
-    Serial.println(WiFi.localIP());*/
-
     Serial.println();
     Serial.println("[ash] Loading resource files ...");
     Serial.println();
@@ -71,8 +23,6 @@ AssetHandler::AssetHandler(){
 
 AssetHandler::~AssetHandler() {
   delete mServer;
-  delete mSsid;
-  delete mPassword;
 }
 
 void AssetHandler::printServerInformation() {
@@ -94,34 +44,6 @@ void AssetHandler::printServerInformation() {
          
     Serial.print("Chip Mode: ");
     Serial.println(ESP.getFlashChipMode());
-
-    Serial.println("-------------------------------------------------------------------------------------------------");
-    Serial.println();
-}
-
-void AssetHandler::printWifiServerInfo() {
-    byte mac[6];
-  
-    Serial.println();
-    Serial.println("-------------------------------------------------------------------------------------------------");
-  
-    Serial.print("SSID: ");
-    Serial.println(mSsid);
-
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.softAPIP());
-
-    WiFi.macAddress(mac);
-    Serial.print("Device MAC Address: ");
-    for(int i = 5; i >= 1; i--) {
-        Serial.print(mac[i], HEX);
-        Serial.print(":");
-    }
-    Serial.println(mac[0]);
-
-    Serial.print("Signal strength (RSSI): ");
-    Serial.print(WiFi.RSSI());
-    Serial.println(" dBm");
 
     Serial.println("-------------------------------------------------------------------------------------------------");
     Serial.println();

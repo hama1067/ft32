@@ -25,17 +25,17 @@ public:
     /*
      * 
      */
-    void sendWebsocketMessage(String msg);
+    void sendWebSocketMessage(String msg);
 
      /*
       * 
       */
-    bool addWebsocketClient(WiFiClient * pClient, WebSocketServer *nWebSocketServer);
+    bool addWebSocketClient(WiFiClient * pClient, WebSocketServer *nWebSocketServer);
 
     /*
      * 
      */
-    bool removeWebsocketClient(WiFiClient * pClient);
+    bool removeWebSocketClient(WiFiClient * pClient);
 
     /*
      * 
@@ -45,12 +45,12 @@ public:
     /*
      * 
      */
-    void handleWebsocketRequests();
+    void handleWebSocketRequests();
 
     /*
      * 
      */
-    void openWebsocket();
+    void openWebSocket();
     
 private:
     int clientCount;

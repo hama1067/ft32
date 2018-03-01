@@ -10,7 +10,6 @@
 #ifndef ASSETHANDLER_H_
 #define ASSETHANDLER_H_
 
-#define MAXCLIENTS 8
 #include <WiFi.h>
 #include <Esp.h>
 #include "SPIFFSTest.h"
@@ -20,23 +19,18 @@ public:
     /*
      *  our default constructor
      */
-	  AssetHandler();
+	 AssetHandler();
 
     /*
      *   default destructor
      */
-	  ~AssetHandler();
+	 ~AssetHandler();
 
     /*
      *   display Chip ID, Heap Size, Chip Size, Chip Speed
      *   and Chip Mode of the ESP32 microcontroller
      */
     void printServerInformation();
-
-    /*
-     *   display ssid, IP address, MAC address and signal strength
-     */
-    void printWifiServerInfo();
     
     /*
      *   function, which handles the incomming requests (get/post requests)
@@ -79,16 +73,6 @@ public:
     String getURL(String &inputStream);
 
 private:
-    /* 
-     *   ssid and password is needed to create an Wifi 
-     *   access point
-     *   TODO: -> auto generated ssid?
-     */
-    //const char *mSsid = "ErdoLAN";
-    //const char *mPassword = "L4Nm4cun!?"; 
-    const char *mSsid = "Espap";
-    const char *mPassword = "12345678"; 
-    
     /*
      *   neccessary to read http get/post requests char by char
      */
@@ -127,11 +111,6 @@ private:
      *   post request data body storage
      */
     String mDataBody;
-
-    /*
-     *   allow console output for debug purpose
-     */
-    bool mDebugMode;
 
     /*
      *   SPIFFS Container / Storage
