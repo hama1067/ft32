@@ -68,6 +68,7 @@ public:
 	DigitalAnalogIn(unsigned int);
 	unsigned int getValueAnalog();
 	unsigned int getValueDigital();
+	void setValueDigital(bool);	//Digitalen Ausgang setzen (HIGH/LOW)
 private:
 	unsigned int mInputNummer;
 	unsigned int mInputPortNr;

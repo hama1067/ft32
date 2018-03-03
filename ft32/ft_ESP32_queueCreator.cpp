@@ -47,7 +47,22 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Helligkeit (0..8)
 			break;
 		case 'D':	//Input Digital
-			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
+			if('O' == uebergabestr.charAt(ustrPos))
+			{
+				createPtr->type = uebergabestr.charAt(ustrPos);	//Art eintragen ('O' wenn Output, nichts wenn Input)
+				ustrPos++;	//Zähler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
+				ustrPos++;	//Zähler auf Port-Nummer legen
+				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
+				ustrPos++;	//Zähler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
+				ustrPos++;	//Zähler auf Level legen
+				createPtr->compare_direction = uebergabestr.charAt(ustrPos); //Level eintragen (0=low - Lampe aus, 1=high - Lampe ein)
+			}
+			else
+			{
+				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
+			}
 			break;
 		case 'A':	//Input Analog
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer

@@ -241,3 +241,21 @@ unsigned int DigitalAnalogIn::getValueAnalog()
 	unsigned int eingabe = analogRead(mInputPortNr);
 	return eingabe;
 }
+
+void DigitalAnalogIn::setValueDigital(bool ledLevel)
+{
+	pinMode(mInputPortNr, OUTPUT);	//Pin_Modus einrichten: Output
+	Serial.print("Setze LED ");
+	Serial.print(mInputNummer);
+	Serial.print(" auf ");
+	if (ledLevel)
+	{
+		digitalWrite(mInputPortNr, HIGH);	//Pin auf HIGH setzen
+		Serial.println(" HIGH");
+	}
+	else
+	{
+		digitalWrite(mInputPortNr, LOW);	//Pin auf LOW setzen
+		Serial.println(" LOW");
+	}
+}
