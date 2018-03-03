@@ -35,7 +35,7 @@ void setup() {
     Serial.begin(115200);
     ptrSHM= new SHM;
 
-    nHandler.createUniqueAP("Espap", "12345678");
+    nHandler.createUniqueAP("Espap-", "12345678");
     nAssetHandler = new AssetHandler();
     wsHandler = new WebsocketHandler(ptrSHM);
 
