@@ -1,6 +1,6 @@
 #include "ft_ESP32_queueWorker.h"
-#include <Adafruit_SSD1306.h>
-extern Adafruit_SSD1306 display;
+//#include <Adafruit_SSD1306.h>
+//extern Adafruit_SSD1306 display;
 
 bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,MOTOR_QTY>& mMotorArray, array<Lampe, LAMP_QTY>& mLampeArray, array<DigitalAnalogIn, DAIN_QTY>& mDAIn, SHM* mSHM)
 {	
@@ -21,26 +21,37 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 			workPtr = workPtr->nextElement;	//Zeiger auf n�chstes QE legen
 			break;
 		case 'L':
-			mLampeArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Lampendaten.set -> sollte sofort ausgef�hrt werden
-			workPtr = workPtr->nextElement;	//Zeiger auf n�chstes QE legen
+			mLampeArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Lampendaten.set -> sollte sofort ausgefuehrt werden
+			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'D':	//wird von der HMI noch nicht verwendet
-			mSHM->digitalVal[workPtr->portNr] = mDAIn.at(workPtr->portNr).getValueDigital();	//Wert in Container schreiben
-			//Wenn das Display zur Analoganzeige benutzt wird:
-			display.setCursor(0,0);
-			display.print("Digital In ");
-			display.println(workPtr->portNr);
-			display.print(mDAIn.at(workPtr->portNr).getValueDigital());
-			//Ende Display
+		case 'D':	//Handling der Digitalen Anschluesse
+			if (workPtr->type == 'O')	//Digitalen Ausgang setzen
+			{
+				mDAIn.at(workPtr->portNr).setValueDigital(workPtr->compare_direction);	//Ein-/Ausschalten des Pins
+			}
+			else	//Digitalen Eingang lesen, wird von der HMI noch nicht verwendet
+			{
+				mSHM->digitalVal[workPtr->portNr] = mDAIn.at(workPtr->portNr).getValueDigital();	//Wert in Container schreiben
+				//Wenn das Display zur Analoganzeige benutzt wird:
+				/*
+				display.setCursor(0,0);
+				display.print("Digital In ");
+				display.println(workPtr->portNr);
+				display.print(mDAIn.at(workPtr->portNr).getValueDigital());
+				*/
+				//Ende Display
+			}
 			workPtr = workPtr->nextElement;	//Zeiger auf n�chstes QE legen
 			break;
 		case 'A':	//wird von der HMI noch nicht verwendet
 			mSHM->analogVal[workPtr->portNr] = mDAIn.at(workPtr->portNr).getValueAnalog()/32;	//Wert in Container schreiben, 12Bit-Wert auf 7Bit-Wert skalieren (Beschr�nkung wegen HMI)
 			//Wenn das Display zur Digitalanzeige benutzt wird:
+			/*
 			display.setCursor(0,16);
 			display.print("Analog In ");
 			display.println(workPtr->portNr);
 			display.print(mDAIn.at(workPtr->portNr).getValueAnalog());
+			*/
 			//Ende Display
 			workPtr = workPtr->nextElement;	//Zeiger auf n�chstes QE legen
 		case 'S':
@@ -224,7 +235,8 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 			break;
 		}
 		
-		//DEBUG MIT DISPLAY - Anzeige aller Eing�nge (digital und analog)
+		//DEBUG MIT DISPLAY - Anzeige aller Eingaenge (digital und analog)
+		/*
 		for(int i = 0; i < DAIN_QTY; i++)
 		{
 			display.setCursor((i%4)*32,(i/4)*16);
@@ -236,6 +248,7 @@ bool queueWorker(commonElement*& startPtr, commonElement*& endPtr, array<Motor,M
 		}
 		display.display();
 		display.clearDisplay();
+		*/
 		//~DEBUG MIT DISPLAY
 
 		do {
