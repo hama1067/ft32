@@ -42,13 +42,13 @@ void setup() {
     Serial.println("[main] Starting queue task");
 
     xTaskCreatePinnedToCore(
-      initQueue_static,   /* Function to implement the task */
-      "initQueue_static", /* Name of the task */
-      4096,      /* Stack size in words */
-      (void*)ptrSHM,       /* Task input parameter */
-      0,          /* Priority of the task */
-      NULL,       /* Task handle. */
-      1);  /* Core where the task should run */
+      initQueue_static,   	/* Function to implement the task */
+      "initQueue_static", 	/* Name of the task */
+      4096,      			/* Stack size in words */
+      (void*)ptrSHM,       	/* Task input parameter */
+      0,          			/* Priority of the task */
+      NULL,       			/* Task handle. */
+      1);  					/* Core where the task should run */
 }
 
 void loop() {

@@ -124,6 +124,7 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
   Serial.println();
   Serial.print("[ws] Joining SHM container with status ");
   mSHM=pSHM;
+  Serial.println(mSHM->commonStart);
   
   addClient.unlock();
   removeClient.unlock();
