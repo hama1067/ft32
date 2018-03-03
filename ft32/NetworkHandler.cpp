@@ -42,8 +42,9 @@ void NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) {
 	Serial.println("*");
 
 	String test_ssid=pSsid;
-	char hex_serial_number[4];
-  	sprintf(hex_serial_number,"%x",(unsigned int)ESP.getEfuseMac());
+	char hex_serial_number[13];
+  	sprintf(&hex_serial_number[0],"%X",(uint16_t)(ESP.getEfuseMac()>>32));
+  	sprintf(&hex_serial_number[4],"%X",(uint32_t)ESP.getEfuseMac());
 	test_ssid=test_ssid+hex_serial_number;
 	int numSsid = WiFi.scanNetworks();
 	bool ssidExist;
