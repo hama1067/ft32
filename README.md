@@ -15,7 +15,12 @@ Before you can start, you have to install some dependencies und you need additio
 
 Please make sure you have connected all components correctly as it is mentioned on this [documentation page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik/0404Portbelegungsplan.html).
 
-After that you have to flash the ESP32 with the C++ software. Therefore you have to open the ft32.ino file from our github repository in the Arduino IDE (make sure you have setup up your [Arduino Environment](https://github.com/espressif/arduino-esp32) correctly).
+Now you have to flash the ESP32 with the C++ software. Therefore you have to open the ft32.ino file from our github repository in the Arduino IDE (make sure you have setup up your [Arduino Environment](https://github.com/espressif/arduino-esp32) correctly), compile the source code and after that you have o flash the microcontroller.
+
+Make sure you have installed the following arduino libraries via the internal arduino packet manager:
+
+- Adafruit_GFX
+- Adafruit_SSD1306
 
 Now you can go on with writing the neccessary web files into the flash memory (calles SPIFFS) of the ESP32. It might be difficult, but we have created some scripts to make it as easy as possible.
 
