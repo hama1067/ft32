@@ -22,7 +22,7 @@ Make sure you have installed the following arduino libraries via the internal ar
 - Adafruit_GFX
 - Adafruit_SSD1306
 
-Now you can go on with writing the neccessary web files into the flash memory (calles SPIFFS) of the ESP32. It might be difficult, but we have created some scripts to make it as easy as possible.
+Now you can go on with writing the neccessary web files into the flash memory (called SPIFFS) of the ESP32. It might be difficult, but we have created some scripts to make it as easy as possible.
 
 ## Writing to SPIFFS Memory in Linux
 
