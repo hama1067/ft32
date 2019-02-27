@@ -8,7 +8,7 @@ If you want to checkout the current cody++ web IDE version 0.5, please visit the
 
 ## Quick start
 
-Before you can start, you have to install some dependencies und you need additional hardware. Beside the ESP32 micocontroller as the main component, you will need:
+Before you can start, you have to install some dependencies und you need additional hardware. Beside the ESP32 microcontroller as the main component, you will need:
 
 - [OLED](http://www.dx.com/p/0-96-128x64-i2c-interface-blue-color-oled-display-module-board-for-arduino-419232) Display
 - [Motor](https://www.pololu.com/product/2137) driver
