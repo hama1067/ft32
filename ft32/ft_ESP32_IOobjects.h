@@ -12,26 +12,28 @@ Hinweis: MaxiBoard kann keine Analogdaten lesen
 
 #include <Arduino.h>
 #include <SparkFunSX1509.h>
+//#include <SX1509_IO_Expander/src/SparkFunSX1509.h>
 
 //Festlegen Anzahl Ports
-constexpr size_t MOTOR_QTY = 4;  //Anzahl der Motoren
-constexpr size_t LAMP_QTY = 4;  //Anzahl der Lampen
-constexpr size_t DAIN_QTY = 8;  //Anzahl der Eingänge (digital/analog)
+constexpr size_t MOTOR_QTY = 4;	//max. Anzahl der Motoren
+constexpr size_t LAMP_QTY = 4;  //max. Anzahl der Lampen
+constexpr size_t DAIN_QTY = 8;  //max. Anzahl der Eingänge (digital/analog) (Normal: 8, Wettbewerb: 2)
+constexpr size_t SERVO_QTY = 1;	//max. Anzahl der Servomotoren
 constexpr size_t DIO_PWMO_QTY = 8;
 
 extern bool ISMAXI;
 
-extern int PORT_M_PWM[MOTOR_QTY]; //Output-Pins Motor-Drehzahl
-extern int PORT_L_PWM[LAMP_QTY]; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert
+extern int PORT_M_PWM[MOTOR_QTY];	//Output-Pins Motor-Drehzahl
+extern int PORT_L_PWM[LAMP_QTY];	//Output-Pins Lampe, werden hier über den selben Treiber angesteuert
 extern int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
 
-const int PORT_M_DIR[MOTOR_QTY] = { 16, 2, 14, 12};  //Output-Pins Motor-Richtung     !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
-const int PORT_M_ENCODER[MOTOR_QTY] = { 32, 33, 25, 26};  //InputPins Motor Encoder      MOMENTAN NICHT VERWENDET
+const int PORT_M_DIR[MOTOR_QTY] = { 16, 2, 16, 2};	//Output-Pins Motor-Richtung     !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
+const int PORT_M_ENCODER[MOTOR_QTY] = { 32, 33, 25, 26};	//InputPins Motor Encoder      MOMENTAN NICHT VERWENDET
 
 
-const int MINI_PORT_M_PWM[MOTOR_QTY] = { 17, 4, 13, 15 };  //Output-Pins Motor-Drehzahl     !! NUR 16 und 2 sind Verbunden, Rest ist Dummy
-const int MINI_PORT_L_PWM[LAMP_QTY] = { 17, 4, 13, 15 }; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert!! NUR 16 und 2 sind Verbunden, Rest ist Dummy
-const int MINI_PORT_IN[DAIN_QTY] = { 32, 25, 33, 26, 26, 26, 26, 26 };
+const int MINI_PORT_M_PWM[MOTOR_QTY] = { 17, 4, 17, 4 };  //Output-Pins Motor-Drehzahl     !! NUR 16 und 2 sind Verbunden, Rest ist Dummy
+const int MINI_PORT_L_PWM[LAMP_QTY] = { 17, 4, 17, 4 }; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert!! NUR 16 und 2 sind Verbunden, Rest ist Dummy
+const int MINI_PORT_IN[DAIN_QTY] = { 32, 25, 33, 32, 25, 33, 32, 25 };
 
 const int MAXI_PORT_M_PWM[MOTOR_QTY] = { 4, 2, 13, 15 }; //Output-Pins Motor-Drehzahl { 16, 2, 13, 15 }
 const int MAXI_PORT_L_PWM[LAMP_QTY] = { 4, 2, 13, 15 };  //Output-Pins Lampe, werden hier über den selben Treiber angesteuert
@@ -69,18 +71,39 @@ class Motor
 public:
 	Motor();	//Standardkonstruktor, setzt alles auf 0;
 	Motor(unsigned int motorNr);	//Konstruktor, Motor-Nr (0..3), weist zu: Pin-Nr für PWM, Pin-Nr für Richtung
+	//Destructor is missing -> detach PWM-Generator from pin!
+	
 	void setValues(bool, unsigned int);	//neue Motorwerte setzen (Richtung, Drehzahl)
 	void reRun();	//bei Aufruf werden erneut die Pins und PWM mit den Attributen gesetzt
 	//evtl. eine Methode Stop einbauen
-  void setMaxi(bool pMaxi);
+	void setMaxi(bool pMaxi);
 private:
 	unsigned int mMotorNr;	//Motornummer 0..3, wird bei Erstellung des Objekts angelegt
 	unsigned int mPortNrPWM;	//Portnummer für PWM, wird bei Erstellung des Objekts zugewiesen
 	unsigned int mPortNrDir;	//PortNr für Richtung, wird bei Erstellung des Objekts zugewiesen
 	bool mRechtslauf;	//Drehrichtung: rechts = ture, links = false
 	unsigned int mDrehzahl;	//aktuelle Geschwindigkeit (von 0 bis 8)
-  unsigned int mLedcChannel;
+	//unsigned int mLedcChannel;	//PWM-Kanal (0..15(max))
 
+};
+
+class CServoMotor
+{
+public:
+	CServoMotor();	//default constructor, puts servomotor into neutral position
+	CServoMotor(unsigned int motorNr, unsigned int dutyCycle = 50);	//contsructor, motor-Nr(0..3) - gives pin-nr for PWM, allows init of position - default is neutral, no pin override here
+	//Destructor is missing -> detach PWM-Generator from pin!
+
+	void setValues(unsigned int dutyCycle);	//new values to be set (servo-position between 0%..100%)
+	void reRun();	//pins will be set with stored values
+
+	void setMaxi(bool pMaxi);
+private:
+	unsigned int mMotorNr;	//motor-nr 0..3, will be set in constructor
+	unsigned int mPortNrPWM;	//pin-nr for PWM, will be set in constructor
+	unsigned int mMinDuty, mMaxDuty;	//minimum and maximum duty-cycle of servo (normally 4%..11%)
+	unsigned int mRelDuty;	//current relative duty-cycle of servo (0%..100% between duty-boarders)
+	unsigned int mLedcChannel;	//Servos get channels 4,5,6 (only for Mini-board)
 };
 
 class Lampe

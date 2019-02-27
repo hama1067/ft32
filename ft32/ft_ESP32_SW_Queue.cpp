@@ -14,6 +14,10 @@ SW_queue::SW_queue()
   {
     mLampeArray[i] = Lampe(i);
   }
+  for (unsigned int i = 0; i < mServoArray.size(); i++)
+  {
+    mServoArray[i] = CServoMotor(i, 100);
+  }
   for (unsigned int i = 0; i < mDAIn.size(); i++)
   {
     mDAIn[i] = DigitalAnalogIn(i);
@@ -35,6 +39,10 @@ void SW_queue::setBoardType(bool pMaxi)
   for (unsigned int i = 0; i < mLampeArray.size(); i++)
   {
     mLampeArray[i].setMaxi(pMaxi);
+  }
+  for (unsigned int i = 0; i < mServoArray.size(); i++)
+  {
+    mServoArray[i].setMaxi(pMaxi);
   }
   for (unsigned int i = 0; i < mDAIn.size(); i++)
   {
@@ -60,7 +68,7 @@ void SW_queue::SW_work(SHM* mSHM)
   //String& uebergabestr = mSHM->webData.data;                    // nicht mehr benötigt
 
   //Übernehmen des Übergabestrings aus dem SPIFFS-Speicher
-  String uebergabestr = "";
+  //String uebergabestr = "";
   int counter = 0;
   bool loop_var = true;
   while (loop_var)
@@ -74,10 +82,13 @@ void SW_queue::SW_work(SHM* mSHM)
   }
 
   //Erstellen der Queue:
-  qCreateError = queue_creator(startPtr, endPtr, uebergabestr);
+  queueCreator();// startPtr, endPtr, uebergabestr);
+  printErrors();
 
   //Testausgabe, ob Queue korrekt erstellt wurde (nur für Debugzwecke)
-  Serial.println("Testausgabe der Queue...");
+  Serial.println("[Q] Testausgabe der Queue:");
+  Serial.println(uebergabestr);
+
   commonElement* workPtr = startPtr->nextElement;
 
   Serial.println(startPtr->ID); //Ausgabe StartID: 0
@@ -94,14 +105,119 @@ void SW_queue::SW_work(SHM* mSHM)
     Serial.println(workPtr->val_pwm_timems_loop); //Ausgabe Wert
     workPtr = workPtr->nextElement; //Zeiger auf nächstes Element der Queue legen
   }
-  Serial.println("Testausgabe der Queue Ende.\n");
-
+  Serial.println("[Q] Testausgabe der Queue Ende.\n");
+  
   //Abarbeiten des Programms
-  qWorkError = queueWorker(startPtr, endPtr, mMotorArray, mLampeArray, mDAIn, mSHM);  //Übergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
+  if (!qCreateError)	//Wenn kein Fehler beim Erstellen der Queue
+  {
+	  queueWorker(mSHM);  //Uebergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
+  }
+  printErrors();
+  //Serial.println("[Q] qWorkError: " + qWorkError);	//display if any runtime-errors occured
 
-  Serial.println("qWorkError: " + qWorkError);
   //Queue löschen
-  queue_delete(startPtr, endPtr);
+  queueDelete();// startPtr, endPtr);
 
-  mSHM->running = false;  //Über das SHM der HMI Bescheid geben, dass die Queue nicht mehr läuft
+  mSHM->running = false;  //Über das SHM der HMI Bescheid geben, dass die Queue nicht mehr laeuft
+}
+
+void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
+{
+	Serial.println("[Q] Queue loeschen...");
+	commonElement* workPtr = startPtr->nextElement;
+	while (workPtr != endPtr)
+	{
+		workPtr = workPtr->nextElement;
+		delete workPtr->prevElement;
+	}
+	Serial.println("[Q] Queue geloescht...\n");
+}
+
+int SW_queue::stoi_ft(String& uestring, int& strcounter)
+{
+	String blockstr = "";	//Hilfsstring, speichert die einzulesende Zahl
+	blockstr += uestring.charAt(strcounter);	//Erste Ziffer einlesen
+	while (isDigit(uestring.charAt(strcounter + 1)))	//naechstes Zeichen ist eine Ziffer?
+	{
+		strcounter++;	//counter auf dieses Zeichen legen
+		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhaengen
+	}
+	return blockstr.toInt();	//gibt es unter Arduino
+}
+
+void SW_queue::checkChar(int& strCounter, char zeichen)
+{
+	if (!qCreateError)
+	{
+		if (uebergabestr.charAt(strCounter) != zeichen)	//auf Zeichen pruefen
+		{
+			qCreateError = true;
+			switch (zeichen)
+			{
+			case '#':
+				qCreateErrorID = 1; //Fehler, keine Raute an der gesuchten Stelle
+				break;
+			case ',':
+				qCreateErrorID = 2; //Fehler, kein Komma an der gesuchten Stelle
+				break;
+			case '.':
+				qCreateErrorID = 3; //Fehler, kein Punkt an der gesuchten Stelle
+				break;
+			case ';':
+				qCreateErrorID = 4; //Fehler, kein Strichpunkt an der gesuchten Stelle
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
+void SW_queue::printErrors()
+{
+	Serial.print("[Q creator] qCreateErrorID = " + String(qCreateErrorID) + ": ");
+	switch (qCreateErrorID)
+	{
+	case 0:	//no errors occurred
+		Serial.println("Keine Fehler beim Erstellen der Queue");
+		break;
+	case 1:
+		Serial.println("Keine Raute an der gesuchten Stelle");
+		break;
+	case 2:
+		Serial.println("Kein Komma an der gesuchten Stelle");
+		break;
+	case 3:
+		Serial.println("Kein Punkt an der gesuchten Stelle");
+		break;
+	case 4:
+		Serial.println("Kein Strichpunkt an der gesuchten Stelle");
+		break;
+	case 5:
+		Serial.println("Kein passendes If zum EndIf gefunden");
+		break;
+	case 6:
+		Serial.println("Kein passendes If oder Else zum EndIf gefunden");
+		break;
+	case 7:
+		Serial.println("Kein passendes While zum EndWhile gefunden");
+		break;
+	case 8:
+		Serial.println("Falscher Identifier");
+		break;
+	default:
+		Serial.println("Unbekannter Fehler, qCreateErrorID: " + qCreateErrorID);
+		break;
+	}
+
+	Serial.print("[Q worker] qWorkErrorID = " + String(qWorkErrorID) + ": ");
+	switch (qWorkErrorID)
+	{
+	case 0:
+		Serial.println("Kein Fehler beim Abarbeiten der Queue");
+		break;
+	default:
+		Serial.println("Unbekannter Fehler, qWorkErrorID: " + qWorkErrorID);
+		break;
+	}
 }
