@@ -17,6 +17,7 @@ public:
 	SW_queue();
 	~SW_queue();
 	void SW_work(SHM* mSHM);
+  void setBoardType(bool pMaxi);
 private:
 	array<Motor, MOTOR_QTY> mMotorArray;  //Anlegen aller Motoren in einen Array
 	array<Lampe, LAMP_QTY> mLampeArray; //Anlegen aller Lampen in einen Array

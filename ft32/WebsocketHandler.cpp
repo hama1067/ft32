@@ -1,4 +1,5 @@
 #include "WebsocketHandler.h"
+#include "CSpiffsStorage.h"
 
 extern WebsocketHandler *wsHandler;
 extern SHM * ptrSHM;
@@ -13,6 +14,9 @@ void webSocketTask(void* params) {
 
   if(wsHandler->addWebSocketClient(nClient, nWebSocketServer)) {
     if(nClient->connected() && nWebSocketServer->handshake(*nClient)) {
+
+      nClient->setTimeout(5);
+      
       Serial.print("[ws] Handshake with client ");
       Serial.print(wsHandler->getClientID(nClient));
       Serial.println(" successfully done.");
@@ -41,6 +45,22 @@ void webSocketTask(void* params) {
 
             ptrSHM->webData.data = *payload;
             ptrSHM->webData.contentLength = (*payload).length();
+
+            // Save to Spiffs
+            int counter = 0;
+            bool loop_var = true;
+            while(loop_var)
+            {
+              if ((ptrSHM->mSpeicher.save(*payload) == true)||(counter > 10))
+              {
+                  loop_var = false;
+              }
+              else
+              {
+                  counter++; 
+              }
+            }
+            //  End Save to Spiffs
 
             Serial.println("[ws] Payload: " + ptrSHM->webData.data);
             
@@ -113,9 +133,12 @@ void eventListener(void* params) {
     }
     if(last != current && current == 0) {
       wsHandler->sendWebSocketMessage("stopped");
+      last = false;
+      current = false;
     }
 
     last = current;
+    delay(100);
   }
   vTaskDelete(NULL);
 }
@@ -176,6 +199,8 @@ bool WebsocketHandler::addWebSocketClient(WiFiClient * pClient, WebSocketServer 
       }
     }
   }
+
+  addClient.unlock();
 
   return false;
 }
@@ -259,4 +284,3 @@ void WebsocketHandler::openWebSocket() {
   Serial.println("[ws] Opening websocket ports...");
   webSocketServer->begin();
 }
-

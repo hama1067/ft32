@@ -222,4 +222,3 @@ String AssetHandler::getURL(String &inputStream) {
     inputStream.indexOf(' ', inputStream.indexOf(' ') + 1)
   );
 }
-

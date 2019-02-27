@@ -17,7 +17,7 @@ public:
 
 	void createAP(const char *pSsid, const char *pPassword);
 
-	void createUniqueAP(const char *pSsid, const char *pPassword);
+	String createUniqueAP(const char *pSsid, const char *pPassword);
 
 	void joinExistingNetwork(const char *pSsid, const char *pPassword);
 

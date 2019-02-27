@@ -30,4 +30,3 @@ typedef unsigned long UINT4;
 #else
 #define PROTO_LIST(list) ()
 #endif
-

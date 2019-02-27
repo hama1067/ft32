@@ -36,7 +36,7 @@ void NetworkHandler::createAP(const char *pSsid, const char *pPassword) {
 	Serial.println("[nwh] IP: " + getIP());
 }
 
-void NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) {
+String NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) {
 	Serial.print("[nwh] Creating AP ");
 	Serial.print(pSsid);
 	Serial.println("*");
@@ -79,6 +79,8 @@ void NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) {
 	Serial.println(mSsid);
 	Serial.println("[nwh] IP: " + getIP());
 
+  return mSsid;
+
 }
 
 void NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPassword) {
@@ -89,13 +91,25 @@ void NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPasswor
 	mPassword = pPassword;
 
 	WiFi.begin(mSsid, mPassword);
-
+  int counter = 0;
 	Serial.print("[nwh] ");
 	while (WiFi.status() != WL_CONNECTED) {
 		delay(500);
 		Serial.print(".");
+    counter++;
+    if (counter == 10)
+    {
+      counter = 0;
+      Serial.print("    restart Wifi    ");
+      WiFi.disconnect();
+      delay(500);
+      WiFi.begin(mSsid, mPassword);
+    }
 	}
-	mIP = (String)WiFi.localIP();
+
+  IPAddress myIP = WiFi.localIP();
+  mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
+	//mIP = (String)WiFi.localIP();
 
 	Serial.println();
 	Serial.println("[nwh] WiFi connected");
@@ -130,4 +144,3 @@ void NetworkHandler::printNetworkInformation() {
 
 	Serial.println();
 }
-

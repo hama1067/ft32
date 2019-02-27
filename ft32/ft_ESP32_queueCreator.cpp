@@ -5,58 +5,58 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 	commonElement* createPtr = startPtr;
 	commonElement* searchPtr;
 
-	bool qCreateError = false;	//Fehlerflag für Erstellung der Queue
+	bool qCreateError = false;	//Fehlerflag fï¿½r Erstellung der Queue
 	int qCreateErrorID = 0;	//FehlerID des ersten Fehlers der gefunden wurde
 
 	int ustrPos = 0;
 
-	checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, '#');	//Prüfen ob erstes Zeichen der Übergabe ein '#'
+	checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, '#');	//Prï¿½fen ob erstes Zeichen der ï¿½bergabe ein '#'
 
-	while ((uebergabestr.charAt(ustrPos) == '#') && !qCreateError)	//solange das nächste Zeichen '#' ist und kein Fehler verursacht wurde
+	while ((uebergabestr.charAt(ustrPos) == '#') && !qCreateError)	//solange das nï¿½chste Zeichen '#' ist und kein Fehler verursacht wurde
 	{
 		createPtr->nextElement = new commonElement;	//neues QE erstellen, Nachfolgezeiger legen
-		createPtr->nextElement->prevElement = createPtr;	//Zeiger zum Vorgänger legen
+		createPtr->nextElement->prevElement = createPtr;	//Zeiger zum Vorgï¿½nger legen
 		createPtr = createPtr->nextElement;	//in neu angelegtes Element springen
 		
-		ustrPos++;	//Zähler auf erste Info nach '#' legen, sollte ID sein
-		createPtr->ID = uebergabestr.charAt(ustrPos);	//ID wird in allen Fällen gespeichert
-		ustrPos++;	//Zähler auf Komma nach ID legen
-		checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-		ustrPos++;	//zähler auf erste Info nach ID legen
+		ustrPos++;	//Zï¿½hler auf erste Info nach '#' legen, sollte ID sein
+		createPtr->ID = uebergabestr.charAt(ustrPos);	//ID wird in allen Fï¿½llen gespeichert
+		ustrPos++;	//Zï¿½hler auf Komma nach ID legen
+		checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+		ustrPos++;	//zï¿½hler auf erste Info nach ID legen
 
-		bool foundRootID = false;	//zur Suche bei EndIf und EndWhile, wird true wenn zugehöriges While oder If gefunden wurde
+		bool foundRootID = false;	//zur Suche bei EndIf und EndWhile, wird true wenn zugehï¿½riges While oder If gefunden wurde
 
 		switch (createPtr->ID)	//Auswahl entsprechend der Element-ID ('M', 'A', 'D', etc.)
 		{
 		case 'M':	//Motor
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer eintragen
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Richtung legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Richtung legen
 			createPtr->compare_direction = uebergabestr.charAt(ustrPos) - '0';	//Richtung
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Drehzahl legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Drehzahl legen
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Drehzahl (0..8, vgl. RoboPro)
 			break;
 		case 'L':	//Input Lampe
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Helligkeit legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Helligkeit legen
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Helligkeit (0..8)
 			break;
 		case 'D':	//Input Digital
 			if('O' == uebergabestr.charAt(ustrPos))
 			{
 				createPtr->type = uebergabestr.charAt(ustrPos);	//Art eintragen ('O' wenn Output, nichts wenn Input)
-				ustrPos++;	//Zähler auf Komma legen
-				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-				ustrPos++;	//Zähler auf Port-Nummer legen
+				ustrPos++;	//Zï¿½hler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+				ustrPos++;	//Zï¿½hler auf Port-Nummer legen
 				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
-				ustrPos++;	//Zähler auf Komma legen
-				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-				ustrPos++;	//Zähler auf Level legen
+				ustrPos++;	//Zï¿½hler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+				ustrPos++;	//Zï¿½hler auf Level legen
 				createPtr->compare_direction = uebergabestr.charAt(ustrPos); //Level eintragen (0=low - Lampe aus, 1=high - Lampe ein)
 			}
 			else
@@ -68,34 +68,34 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
 			break;
 		case 'S':	//Warten
-			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zähler auf letzte Ziffer legen
-			ustrPos++;	//Zähler auf Punkt legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, '.');	//auf Punkt prüfen
-			ustrPos++;	//Zähler auf Millisekunden legen
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zähler auf letzte Ziffer legen
+			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zï¿½hler auf letzte Ziffer legen
+			ustrPos++;	//Zï¿½hler auf Punkt legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, '.');	//auf Punkt prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Millisekunden legen
+			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Sekunden auslesen, Zï¿½hler auf letzte Ziffer legen
 			break;
 		case 'I':	//If
-			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Prüfung) eingtragen
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Port-Nummer legen
+			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Prï¿½fung) eingtragen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Port-Nummer legen
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Vergleichsoperator legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Vergleichsoperator legen
 			createPtr->compare_direction = uebergabestr.charAt(ustrPos);	//Vergleichsoperator (< > =)
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Vergleichswert legen
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Vergleichswert auslesen (Analogwert oder 0/1 beim DIn), Zähler auf letzte Ziffer legen
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf If-ID legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Vergleichswert legen
+			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Vergleichswert auslesen (Analogwert oder 0/1 beim DIn), Zï¿½hler auf letzte Ziffer legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf If-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			break;
 		case 'E':	//Else
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
-			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwärts nach dem zugehörigen If
+			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwï¿½rts nach dem zugehï¿½rigen If
 			foundRootID = false;
 			while (!foundRootID && (searchPtr != startPtr))	//solange kein passendes If gefunden und der Anfang nicht erreicht wurde
 			{
@@ -106,7 +106,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 				}
 				else
 				{
-					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgänger
+					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgï¿½nger
 				}
 			}
 			if (!foundRootID)	//Kein passendes If gefunden
@@ -118,7 +118,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			break;
 		case 'J':	//EndIf
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
-			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwärts nach dem zugehörigen Else oder If
+			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwï¿½rts nach dem zugehï¿½rigen Else oder If
 			foundRootID = false;
 			while (!foundRootID && (searchPtr != startPtr))	//solange kein passendes If gefunden und der Anfang nicht erreicht wurde
 			{
@@ -129,7 +129,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 				}
 				else
 				{
-					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgänger
+					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgï¿½nger
 				}
 			}
 			if (!foundRootID)	//Kein passendes If oder Else gefunden
@@ -140,30 +140,30 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			}
 			break;
 		case 'W':	//While
-			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Prüfung oder Z-Zählschleife) eintragen
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf Zählwert (Zählschleife) oder Port-Nummer (normale Schleife) legen
-			if (createPtr->type != 'Z')	//Schleife ist keine Zählschleife
+			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Prï¿½fung oder Z-Zï¿½hlschleife) eintragen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf Zï¿½hlwert (Zï¿½hlschleife) oder Port-Nummer (normale Schleife) legen
+			if (createPtr->type != 'Z')	//Schleife ist keine Zï¿½hlschleife
 			{
 				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
-				ustrPos++;	//Zähler auf Komma legen
-				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-				ustrPos++;	//Zähler auf Vergleichsoperator legen
+				ustrPos++;	//Zï¿½hler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+				ustrPos++;	//Zï¿½hler auf Vergleichsoperator legen
 				createPtr->compare_direction = uebergabestr.charAt(ustrPos);	//Vergleichsoperator (< > =)
-				ustrPos++;	//Zähler auf Komma legen
-				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-				ustrPos++;	//Zähler auf Vergleichswert legen
+				ustrPos++;	//Zï¿½hler auf Komma legen
+				checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+				ustrPos++;	//Zï¿½hler auf Vergleichswert legen
 			}
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Vergleichswert auslesen (Analogwert oder 0/1 beim DIn), Zähler auf letzte Ziffer legen
-			ustrPos++;	//Zähler auf Komma legen
-			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prüfen
-			ustrPos++;	//Zähler auf While-ID legen
+			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Vergleichswert auslesen (Analogwert oder 0/1 beim DIn), Zï¿½hler auf letzte Ziffer legen
+			ustrPos++;	//Zï¿½hler auf Komma legen
+			checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ',');	//auf Komma prï¿½fen
+			ustrPos++;	//Zï¿½hler auf While-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
 			break;
 		case 'X':	//EndWhile
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
-			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwärts nach dem zugehörigen While
+			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwï¿½rts nach dem zugehï¿½rigen While
 			foundRootID = false;
 			while (!foundRootID && (searchPtr != startPtr))	//solange kein passendes While gefunden und der Anfang nicht erreicht wurde
 			{
@@ -175,7 +175,7 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 				}
 				else
 				{
-					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgänger
+					searchPtr = searchPtr->prevElement;	//weitersuchen beim Vorgï¿½nger
 				}
 			}
 			if (!foundRootID)	//kein passendes While gefunden
@@ -190,12 +190,12 @@ bool queue_creator(commonElement*& startPtr, commonElement*& endPtr, String& ueb
 			break;
 		}
 
-		ustrPos++;	//Zähler zeigt auf Strichpunkt am Ende eines Blocks
-		checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ';'); //auf Strichpunkt prüfen
-		ustrPos++;	//Zähler zeigt auf '#' des nächsten Blocks oder auf ';' am Ende der Übertragung
+		ustrPos++;	//Zï¿½hler zeigt auf Strichpunkt am Ende eines Blocks
+		checkChar(qCreateError, qCreateErrorID, uebergabestr, ustrPos, ';'); //auf Strichpunkt prï¿½fen
+		ustrPos++;	//Zï¿½hler zeigt auf '#' des nï¿½chsten Blocks oder auf ';' am Ende der ï¿½bertragung
 	}
 
-	//letztes abgefragte Zeichen ist kein '#', also vermutlich ';' (wird hier nicht extra geprüft, könnte man aber machen)
+	//letztes abgefragte Zeichen ist kein '#', also vermutlich ';' (wird hier nicht extra geprï¿½ft, kï¿½nnte man aber machen)
 	//Zeiger mit End-QE abpassen
 	createPtr->nextElement = endPtr;
 	endPtr->prevElement = createPtr;
@@ -219,20 +219,20 @@ int stoi_ft(String& uestring, int& strcounter)
 {
 	String blockstr = "";	//Hilfsstring, speichert die einzulesende Zahl
 	blockstr += uestring.charAt(strcounter);	//Erste Ziffer einlesen
-	while (isDigit(uestring.charAt(strcounter+1)))	//nächstes Zeichen ist eine Ziffer?
+	while (isDigit(uestring.charAt(strcounter+1)))	//nï¿½chstes Zeichen ist eine Ziffer?
 	{
 		strcounter++;	//counter auf dieses Zeichen legen
-		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhängen
+		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhï¿½ngen
 	}
 	return blockstr.toInt();	//gibt es unter Arduino
 }
 
-//Nur für Debugging beim Erstellen der Queue:
+//Nur fï¿½r Debugging beim Erstellen der Queue:
 void checkChar(bool& errorFlag, int& errorID, String& uestring, int& strCounter, char zeichen)
 {
 	if (!errorFlag)
 	{
-		if (uestring.charAt(strCounter) != zeichen)	//auf Zeichen prüfen
+		if (uestring.charAt(strCounter) != zeichen)	//auf Zeichen prï¿½fen
 		{
 			errorFlag = true;
 			switch (zeichen)

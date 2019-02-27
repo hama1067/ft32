@@ -63,7 +63,7 @@ void CSPIFFS::readFile(fs::FS &fs, const char * path) {
 	}
 }
 
-void CSPIFFS::writeFile(fs::FS &fs, const char * path, const char * message){
+void CSPIFFS::writeFile(fs::FS &fs, const char * path, String message){
     Serial.printf("Writing file: %s\n", path);
 
     File file = fs.open(path, FILE_WRITE);
@@ -78,7 +78,7 @@ void CSPIFFS::writeFile(fs::FS &fs, const char * path, const char * message){
     }
 }
 
-void CSPIFFS::appendFile(fs::FS &fs, const char * path, const char * message){
+void CSPIFFS::appendFile(fs::FS &fs, const char * path, String message){
     Serial.printf("Appending to file: %s\n", path);
 
     File file = fs.open(path, FILE_APPEND);
@@ -247,4 +247,3 @@ int CSPIFFS::getFileSize(fs::FS &fs, const char * path) {
   File file = fs.open(path);
   return file.size();
 }
-

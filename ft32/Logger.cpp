@@ -26,4 +26,3 @@ Logger::Logger() {
 Logger::~Logger() {
 	// TODO Auto-generated destructor stub
 }
-

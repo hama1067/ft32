@@ -16,12 +16,8 @@ clear;
 echo "makeSPIFFS.sh v1.0"
 echo
 
-./mkspiffs -c  ./data/ -b 4096 -p 256 -s 0x16F000 spiffs.bin
+./mkspiffs -c ./data/ -b 4096 -p 256 -s 0x16F000 spiffs.bin
 
 echo
 
 python ./esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 write_flash -z 0x291000 ./spiffs.bin
-
-echo "Press any key to continue..."
-read -n1 any_key
- # pause?!
