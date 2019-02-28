@@ -23,6 +23,7 @@ public:
   bool save(String pData);
   bool append(String pData);
   bool getStr(String * pData);
+  int getFileSize(const char * path);
 private:
   bool mLock;
   CSPIFFS mSpiffs;

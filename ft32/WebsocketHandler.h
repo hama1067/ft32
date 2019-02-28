@@ -10,7 +10,7 @@
 #ifndef WEBSOCKETHANDLER_H_
 #define WEBSOCKETHANDLER_H_
 
-#define MAXCLIENTS 1
+#define MAXCLIENTS 2
 #include <WiFi.h>
 #include "WebSocketServer.h"
 #include "WebSocketConnection.h"

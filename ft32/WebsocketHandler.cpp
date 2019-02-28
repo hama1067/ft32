@@ -14,8 +14,6 @@ void webSocketTask(void* params) {
 
   if(wsHandler->addWebSocketClient(nClient, nWebSocketServer)) {
     if(nClient->connected() && nWebSocketServer->handshake(*nClient)) {
-
-      nClient->setTimeout(5);
       
       Serial.print("[ws] Handshake with client ");
       Serial.print(wsHandler->getClientID(nClient));
@@ -23,6 +21,15 @@ void webSocketTask(void* params) {
       
       Serial.println("[ws] Establishing connection...");
       
+      //Update state
+      if( ptrSHM->commonStart == 1 && ptrSHM->commonPause == 0 ) {
+    	  wsHandler->sendWebSocketMessage("running");
+      } else if( ptrSHM->commonPause == 1 ) {
+    	  wsHandler->sendWebSocketMessage("paused");
+      } else if (ptrSHM->mSpeicher.getFileSize("/spiffs-cody-storage.txt") > 1) {
+    	  wsHandler->sendWebSocketMessage("ready");
+      }
+
       while (nClient->connected()) {
       
         *data = nWebSocketServer->getData();
@@ -138,7 +145,7 @@ void eventListener(void* params) {
     }
 
     last = current;
-    delay(100);
+    delay(150);
   }
   vTaskDelete(NULL);
 }
@@ -171,7 +178,7 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     NULL,             /* Task input parameter */
     0,                /* Priority of the task */
     NULL,             /* Task handle. */
-    1);               /* Core where the task should run */
+    0);               /* Core where the task should run */
 
   webSocketServer->begin();
 }
@@ -277,7 +284,7 @@ void WebsocketHandler::handleWebSocketRequests() {
     delete client;
   }
   
-  delay(100);
+  delay(10);
 }
 
 void WebsocketHandler::openWebSocket() {
