@@ -65,10 +65,11 @@ void SW_queue::SW_work(SHM* mSHM)
 
 
   //Übernehmen des Übergabestrings aus dem SHM als Referenz
-  //String& uebergabestr = mSHM->webData.data;                    // nicht mehr benötigt
+  uebergabestr = mSHM->webData.data;                    // nicht mehr benötigt (tobias) //oder vieleicht doch? (JM)
 
   //Übernehmen des Übergabestrings aus dem SPIFFS-Speicher
   //String uebergabestr = "";
+  /*
   int counter = 0;
   bool loop_var = true;
   while (loop_var)
@@ -80,6 +81,7 @@ void SW_queue::SW_work(SHM* mSHM)
     else
       counter++;
   }
+  */
 
   //Erstellen der Queue:
   queueCreator();// startPtr, endPtr, uebergabestr);
