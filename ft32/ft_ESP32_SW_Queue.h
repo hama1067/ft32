@@ -7,7 +7,7 @@
 //#include "ft_ESP32_queueCreator.h"  //Aufbauen der Queue
 #include "ft_ESP32_SHM.h" //gemeinsamer Speicher (SHared Memory)
 #include "ft_ESP32_IOobjects.h" //Klassen der Ausgänge (Hardwaretreiber)
-#include "ft_ESP32_queueWorker.h" //abarbeiten der Queue
+//#include "ft_ESP32_queueWorker.h" //abarbeiten der Queue
 
 using namespace std;  //zum Handling der Arrays (für Zugriffssicherung)
 
