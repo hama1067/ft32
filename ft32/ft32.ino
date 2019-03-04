@@ -28,44 +28,58 @@ Adafruit_SSD1306 display(4);
 
 void initQueue_static(void* arg) {
     SHM *pSHM=(SHM*) arg;
-    while(1)
-    {
-      if(true==pSHM->commonStart){mySW_queue.SW_work(pSHM);}
-      else{delay(1);}
+
+    while(1) {
+      if(true==pSHM->commonStart){
+    	  mySW_queue.SW_work(pSHM);
+      } else{
+    	  delay(1);
+      }
     }
+
     vTaskDelete(NULL);
 }
 
 void setup() {
-    DisableMotorBoard();                        // Aussschalten Motortreiber
-    Serial.begin(115200);
-    initExtension();                            // Initialisieren des Extension Board
-    bool maxiboard = BoardType.CheckMaxi();     // Erkennen welche Boards
-    mySW_queue.setBoardType(maxiboard);         // Anpassen der Boardspezifischen Ports
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C
-    InitOled(display);                          // Initialisieren des Displays
-    ptrSHM = new SHM;                           // Anlegen Shared Memory
-    // Abfrage welches Board (Maxi oder Mini) und festlegen des Tasters
-    int TASTER_PIN;
-    if (maxiboard == true){TASTER_PIN = 23;}            // Im Fall: Maxiboard erkannt
-    else {TASTER_PIN = 35;}                             // Im Fall: Miniboard erkannt
-    hmiTaster.initButton(TASTER_PIN, ptrSHM);           // Initialisieren des Tasters
+    Serial.begin(115200);											// Serial communication
+    ptrSHM = new SHM;                          		 				// Anlegen Shared Memory
 
-    // Aufbau des Netzwerkes
-    printVerbindungsaufbau(display);                      //Oled Ausgabe Verbinung wird aufgebaut
-    if (digitalRead(TASTER_PIN) == false)
-    {
+    DisableMotorBoard();                        					// Aussschalten Motortreiber
+    initExtension();                            					// Initialisieren des Extension Board
+
+    bool maxiboard = BoardType.CheckMaxi();     					// Erkennen welche Boards
+    mySW_queue.setBoardType(maxiboard);         					// Anpassen der Boardspezifischen Ports
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  					// initialize with the I2C addr 0x3C
+
+    InitOled(display);                          					// Initialisieren des Displays
+
+    /* Abfrage welches Board (Maxi oder Mini) und festlegen des Tasters */
+
+    int TASTER_PIN;
+    if (maxiboard == true) {
+    	TASTER_PIN = 23; 											// Im Fall: Maxiboard erkannt
+    } else {
+    	TASTER_PIN = 35;											// Im Fall: Miniboard erkannt
+    }
+    hmiTaster.initButton(TASTER_PIN, ptrSHM);           			// Initialisieren des Tasters
+
+    /* Aufbau des Netzwerkes */
+
+    printVerbindungsaufbau(display);                   				//Oled Ausgabe Verbindung wird aufgebaut
+
+    if (digitalRead(TASTER_PIN) == false) {
       nHandler.joinExistingNetwork(ssid_network, password_network);
       Serial.println("Connected");
       password = String(password_network);
       ssid = String(ssid_network);
-    }
-    else
-    {
+    } else {
       ssid = nHandler.createUniqueAP(ssid_ap, password_ap);
       password = String(password_ap);
     }
-    printVerbunden(display);                             //Oled Ausgabe Verbinung aufgebaut
+
+    printVerbunden(display);                             			//Oled Ausgabe Verbinung aufgebaut
+    printLoginData(display, ptrSHM->IPAdress, password, ssid);		//Ausgabe der IP Adresse SSID und Passwort des erreichbaren Netzwerks
+
     ptrSHM->IPAdress = nHandler.getIP();
     nAssetHandler = new AssetHandler();
     wsHandler = new WebsocketHandler(ptrSHM);
@@ -73,15 +87,13 @@ void setup() {
     Serial.println("[main] Starting queue task");
 
     xTaskCreatePinnedToCore(
-      initQueue_static,   	/* Function to implement the task */
-      "initQueue_static", 	/* Name of the task */
-      4096,      			/* Stack size in words */
-      (void*)ptrSHM,       	/* Task input parameter */
-      0,          			/* Priority of the task */
-      NULL,       			/* Task handle. */
-      1);  					/* Core where the task should run */
-
-     printLoginData(display, ptrSHM->IPAdress, password, ssid);               //Ausgabe der IP Adresse SSID und Passwort des erreichbaren Netzwerks
+      initQueue_static,   											// Function to implement the task
+      "initQueue_static", 											// Name of the task
+      4096,      													// Stack size in words
+      (void*)ptrSHM,       											// Task input parameter
+      0,          													// Priority of the task
+      NULL,       													// Task handle.
+      1);  															// Core where the task should run
 }
 
 void loop() {

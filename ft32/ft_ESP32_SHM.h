@@ -18,8 +18,8 @@ struct SHM
 	int analogVal[8] = { 0 };   // Queue: RW, Web: R
 	bool running = false;       // Queue: RW, Web: R
 
-  String IPAdress = "";
-  CSpiffsStorage mSpeicher;
+	String IPAdress = "";
+	CSpiffsStorage mSpeicher;
 };
 
 #endif /* FT_ESP32_SHM_H_ */

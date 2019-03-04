@@ -57,3 +57,7 @@ bool CSpiffsStorage::getStr(String * pData)
 int CSpiffsStorage::getFileSize(const char * path) {
 	return mSpiffs.getFileSize(SPIFFS, path);
 }
+
+bool CSpiffsStorage::fileExists(const char * path) {
+	return mSpiffs.fileExists(SPIFFS, path);
+}
