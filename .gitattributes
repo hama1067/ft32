@@ -1,0 +1,3 @@
+ft32/makeSPIFFS/* linguist-documentation=false
+ft32/makeSPIFFS/linux/esptool.py linguist-detectable=false
+ft32/makeSPIFFS/windows/esptool.py linguist-detectable=false
