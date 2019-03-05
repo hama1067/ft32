@@ -25,6 +25,7 @@ public:
   bool getStr(String * pData);
   int getFileSize(const char * path);
   bool fileExists(const char * path);
+  CSPIFFS getSpiffs();
 
 private:
   bool mLock;

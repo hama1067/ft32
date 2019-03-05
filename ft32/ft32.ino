@@ -1,30 +1,50 @@
+/*
+ * ft32.ino
+ *
+ *  Created on: Mar 04, 2019
+ *      Author: joseph
+ *      version: 1.5 beta
+ *  
+ *  description:
+ *  
+ *  
+ *  notifications:
+ *  
+ */
+
+/* Neccessary asset, websocket, config and network connection handling includes */
 #include "AssetHandler.h"
 #include "WebsocketHandler.h"
 #include "NetworkHandler.h"
+#include "ConfigHandler.h"
+
+/* Neccessary queue includes */
 #include "ft_ESP32_SHM.h"
 #include "ft_ESP32_SW_Queue.h"
 #include "ft_ESP32_IOobjects.h"
+
+/* Additional Spiffs acces, HMI button and Oled includes */
 #include "CSpiffsStorage.h"
 #include "CButton.h"
 #include "DisableMotorBoard.h"
 #include "OledHandler.h"
 
-AssetHandler *nAssetHandler;          // Startet auch SPIFFS, also Objekt relativ am Anfang erstellen
+/* Write protectet area, modifing is not allowed */
+AssetHandler *nAssetHandler;
 WebsocketHandler *wsHandler;
 NetworkHandler nHandler;
-CheckMaxiExtension BoardType;
-
-const char password_network[] = "63601430989011937932";
-const char ssid_network[] = "HIT-FRITZBOX-7490";
-const char password_ap[] = "12345678";
-const char ssid_ap[] = "FT-CODY-";
-String password = "";
-String ssid = "";
+ConfigHandler *nConfigHandler;
 
 SHM *ptrSHM;
 SW_queue mySW_queue;
+char * secureCipherKey = "we8ogr78owt346troga";
+/* ***********************************************/
+
+/* Additional hardware specific modifications */
 CButton hmiTaster;
 Adafruit_SSD1306 display(4);
+CheckMaxiExtension BoardType;
+/* ********************************************/
 
 void initQueue_static(void* arg) {
     SHM *pSHM=(SHM*) arg;
@@ -41,59 +61,74 @@ void initQueue_static(void* arg) {
 }
 
 void setup() {
-    Serial.begin(115200);											// Serial communication
-    ptrSHM = new SHM;                          		 				// Anlegen Shared Memory
+    Serial.begin(115200);											                    // serial communication
+    ptrSHM = new SHM;                          		 			    	    // create shared memory
+    SPIFFS.begin(true);                                           // initialize internal storage
+    
+    /* initialize system files and prepare to setup board parameters */
 
-    DisableMotorBoard();                        					// Aussschalten Motortreiber
-    initExtension();                            					// Initialisieren des Extension Board
+    nConfigHandler = new ConfigHandler(ptrSHM);
+    nConfigHandler->setCipherKey(secureCipherKey);                // initialize cipher key
+    nConfigHandler->checkup();                                    // check system if all neccessary files are existing
+    
+    /* initialize board specific parameters like oled, buttons, motor drivers */
 
-    bool maxiboard = BoardType.CheckMaxi();     					// Erkennen welche Boards
-    mySW_queue.setBoardType(maxiboard);         					// Anpassen der Boardspezifischen Ports
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  					// initialize with the I2C addr 0x3C
+    DisableMotorBoard();                        					        // turn off motor driver
+    initExtension();                            					        // initialize extension board
 
-    InitOled(display);                          					// Initialisieren des Displays
+    bool maxiboard = BoardType.CheckMaxi();     					        // detecting board type (small or big one -> HWG, HWK)
+    mySW_queue.setBoardType(maxiboard);         					        // set board specific port properties 
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  					        // initialize with the I2C addr 0x3C
 
-    /* Abfrage welches Board (Maxi oder Mini) und festlegen des Tasters */
+    InitOled(display);                          					        // initialize oled display
 
-    int TASTER_PIN;
-    if (maxiboard == true) {
-    	TASTER_PIN = 23; 											// Im Fall: Maxiboard erkannt
+    /* detecting board type, depending one which board we have to set the right button pin number */
+
+    int TASTER_PIN;  
+    (maxiboard == true) ? TASTER_PIN = 23 : TASTER_PIN = 35; 	    // case true:  maxi board (HWG) detected, case false: mini board (HWK) detected   
+    hmiTaster.initButton(TASTER_PIN, ptrSHM);           			    // initialize hmi button (connection button + start queue button)
+
+    /* check for wlanConfiguration file, try to connect, if fail, create an access point */
+
+    printOledMessage(display, "Connecting ...");
+
+    String ssid = "";
+    bool connectToSavedWlan = false;
+    String wlanConfiguration[2];
+
+    if ( digitalRead(TASTER_PIN) == false && nConfigHandler->checkNetworkConfigurationFile() ) {      
+      nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
+      connectToSavedWlan = nHandler.joinExistingNetwork(wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
+      
+      if( connectToSavedWlan ) {
+        ssid = wlanConfiguration[0];
+      }
     } else {
-    	TASTER_PIN = 35;											// Im Fall: Miniboard erkannt
-    }
-    hmiTaster.initButton(TASTER_PIN, ptrSHM);           			// Initialisieren des Tasters
-
-    /* Aufbau des Netzwerkes */
-
-    printVerbindungsaufbau(display);                   				//Oled Ausgabe Verbindung wird aufgebaut
-
-    if (digitalRead(TASTER_PIN) == false) {
-      nHandler.joinExistingNetwork(ssid_network, password_network);
-      Serial.println("Connected");
-      password = String(password_network);
-      ssid = String(ssid_network);
-    } else {
-      ssid = nHandler.createUniqueAP(ssid_ap, password_ap);
-      password = String(password_ap);
+      printOledMessage(display, "No network config\nfile found or button pressed.\nCreating network ...");
+      connectToSavedWlan = false;
     }
 
-    printVerbunden(display);                             			//Oled Ausgabe Verbinung aufgebaut
-    printLoginData(display, ptrSHM->IPAdress, password, ssid);		//Ausgabe der IP Adresse SSID und Passwort des erreichbaren Netzwerks
+    if( !connectToSavedWlan ) {
+      ssid = nHandler.createUniqueAP();
+    }
+    
+    printConnectionStatus(display, nHandler.getIP(), ssid);
 
     ptrSHM->IPAdress = nHandler.getIP();
     nAssetHandler = new AssetHandler();
     wsHandler = new WebsocketHandler(ptrSHM);
 
+    delay(10);
     Serial.println("[main] Starting queue task");
 
     xTaskCreatePinnedToCore(
       initQueue_static,   											// Function to implement the task
       "initQueue_static", 											// Name of the task
-      4096,      													// Stack size in words
+      4096,      													      // Stack size in words
       (void*)ptrSHM,       											// Task input parameter
-      0,          													// Priority of the task
-      NULL,       													// Task handle.
-      1);  															// Core where the task should run
+      0,          													    // Priority of the task
+      NULL,       													    // Task handle.
+      1);  															        // Core where the task should run
 }
 
 void loop() {

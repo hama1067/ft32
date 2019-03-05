@@ -8,8 +8,7 @@ CButton::CButton()
 
 CButton::~CButton(){};
 
-void CButton::initButton(const int pPin, SHM * pSHM)
-{
+void CButton::initButton(const int pPin, SHM * pSHM) {
   ptrSHM = pSHM;
   mPin = pPin;
   pinMode(pPin, INPUT_PULLUP);

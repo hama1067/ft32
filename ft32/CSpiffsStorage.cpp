@@ -7,15 +7,13 @@
 
 #include "CSpiffsStorage.h"
 
-CSpiffsStorage::CSpiffsStorage()
-{
+CSpiffsStorage::CSpiffsStorage() {
   mLock = false;
 }
 
 CSpiffsStorage::~CSpiffsStorage(){};
 
-bool CSpiffsStorage::save(String pData)
-{
+bool CSpiffsStorage::save(String pData) {
   if (mLock == true)
     return false;
   else
@@ -27,8 +25,7 @@ bool CSpiffsStorage::save(String pData)
   }
 }
 
-bool CSpiffsStorage::append(String pData)
-{
+bool CSpiffsStorage::append(String pData) {
   if (mLock == true)
     return false;
   else
@@ -40,8 +37,7 @@ bool CSpiffsStorage::append(String pData)
   }
 }
 
-bool CSpiffsStorage::getStr(String * pData)
-{
+bool CSpiffsStorage::getStr(String * pData) {
   String ret;
   if (mLock == true)
     return false;
@@ -60,4 +56,8 @@ int CSpiffsStorage::getFileSize(const char * path) {
 
 bool CSpiffsStorage::fileExists(const char * path) {
 	return mSpiffs.fileExists(SPIFFS, path);
+}
+
+CSPIFFS CSpiffsStorage::getSpiffs() {
+  return mSpiffs;
 }

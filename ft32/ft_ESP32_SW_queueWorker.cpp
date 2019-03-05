@@ -305,10 +305,10 @@ void SW_queue::queueWorker(SHM* mSHM)
 
 	delay(10);
 
-  mSHM->commonStart=false;
-  mSHM->commonPause=false;
+  //mSHM->commonStart=false;
+  //mSHM->commonPause=false;
   //mSHM->commonStopp=false;
-  mSHM->running=false;
+  //mSHM->running=false;
   
 	Serial.println("Ausgaenge zurueckgesetzt.");
 	

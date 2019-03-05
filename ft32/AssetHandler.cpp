@@ -15,7 +15,7 @@ AssetHandler::AssetHandler(){
     Serial.println();
     Serial.println("[ash] Loading resource files ...");
     Serial.println();
-    SPIFFS.begin(true);
+    //SPIFFS.begin(true);
     mSPIFFS.listDir(SPIFFS, "/",0);
 
     mServer->begin();

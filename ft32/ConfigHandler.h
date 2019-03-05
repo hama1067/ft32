@@ -8,19 +8,29 @@
 #ifndef CONFIGHANDLER_H_
 #define CONFIGHANDLER_H_
 
+#include "CSpiffsStorage.h"
+#include "Cipher.h"
 #include "ft_ESP32_SHM.h"
+
+#define CONFIGHANDLER_DEBUG
 
 class ConfigHandler {
 public:
-	ConfigHandler(SHM * pSHM);
+	ConfigHandler(SHM *ptr);
 	virtual ~ConfigHandler();
 
-	bool checkSpiffsStorageFile();
+  void checkup();
+  void setCipherKey(char * key);
+  
+	bool checkSpiffsCodyStorageFile();
 	bool checkNetworkConfigurationFile();
-
+  bool decipherNetworkConfigurationFile(String (& array) [2]);
+  bool checkWebFiles();
 
 private:
-	SHM *ptrSHM;
+  CSpiffsStorage mSpiffsStorage;
+  Cipher cipher;
+  SHM *mPtr;
 };
 
 #endif /* CONFIGHANDLER_H_ */

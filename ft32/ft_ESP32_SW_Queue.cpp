@@ -31,7 +31,7 @@ SW_queue::SW_queue()
 
 void SW_queue::setBoardType(bool pMaxi)
 {
-  Serial.println("IO-Objekte anpassen...");
+  Serial.println("[io] adjusting IO-Objects ...");
   for (unsigned int i = 0; i < mMotorArray.size(); i++) //4 Motoren anlegen (Standardkonstruktor)
   {
     mMotorArray[i].setMaxi(pMaxi);
@@ -48,7 +48,7 @@ void SW_queue::setBoardType(bool pMaxi)
   {
     mDAIn[i].setMaxi(pMaxi);
   }
-  Serial.println("IO-Objekte angepasst\n");
+  Serial.println("[io] IO-Objects adjusted.\n");
 }
 
 SW_queue::~SW_queue()
@@ -65,7 +65,8 @@ void SW_queue::SW_work(SHM* mSHM)
 
 
   //Übernehmen des Übergabestrings aus dem SHM als Referenz
-  uebergabestr = mSHM->webData.data;                    // nicht mehr benötigt (tobias) //oder vieleicht doch? (JM)
+  uebergabestr = mSHM->webData.data;
+  //uebergabestr = mSHM->webData.data;                    // nicht mehr benötigt (tobias) //oder vieleicht doch? (JM)
 
   //Übernehmen des Übergabestrings aus dem SPIFFS-Speicher
   //String uebergabestr = "";
@@ -120,7 +121,14 @@ void SW_queue::SW_work(SHM* mSHM)
   //Queue löschen
   queueDelete();// startPtr, endPtr);
 
-  mSHM->running = false;  //Über das SHM der HMI Bescheid geben, dass die Queue nicht mehr laeuft
+  qCreateError = false;
+  qCreateErrorID = 0;
+  qWorkError = false;  
+  qWorkErrorID = 0;
+
+  mSHM->commonStart=false;
+  mSHM->commonPause=false;
+  mSHM->running = false;  //Über das SHM der HMI Bescheid geben, dass die Queue nicht mehr laeuft  
 }
 
 void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue

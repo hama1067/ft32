@@ -64,7 +64,7 @@ void CSPIFFS::readFile(fs::FS &fs, const char * path) {
 }
 
 void CSPIFFS::writeFile(fs::FS &fs, const char * path, String message){
-    Serial.printf("Writing file: %s\n", path);
+    Serial.printf("[spiffs] Writing file: %s\n", path);
 
     File file = fs.open(path, FILE_WRITE);
     if(!file){
@@ -72,9 +72,9 @@ void CSPIFFS::writeFile(fs::FS &fs, const char * path, String message){
         return;
     }
     if(file.print(message)){
-        Serial.println("File written");
+        Serial.println("[spiffs] File written");
     } else {
-        Serial.println("Write failed");
+        Serial.println("[spiffs] Write failed");
     }
 }
 

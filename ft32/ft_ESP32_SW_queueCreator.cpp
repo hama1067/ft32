@@ -6,8 +6,8 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 	commonElement* createPtr = startPtr;
 	commonElement* searchPtr;
 
-	bool qCreateError = false;	//Fehlerflag fuer Erstellung der Queue
-	int qCreateErrorID = 0;	//FehlerID des ersten Fehlers der gefunden wurde
+	//bool qCreateError = false;	//Fehlerflag fuer Erstellung der Queue
+	//int qCreateErrorID = 0;	//FehlerID des ersten Fehlers der gefunden wurde
 
 	int ustrPos = 0;
 

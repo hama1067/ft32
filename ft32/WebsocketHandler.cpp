@@ -26,7 +26,7 @@ void webSocketTask(void* params) {
     	  wsHandler->sendWebSocketMessage("running");
       } else if( ptrSHM->commonPause == 1 ) {
     	  wsHandler->sendWebSocketMessage("paused");
-      } else if (ptrSHM->mSpeicher.getFileSize("/spiffs-cody-storage.txt") > 1) {
+      } else if (ptrSHM->mSpeicher.getFileSize("/spiffs-cody-storage.txt") > 0) {
     	  wsHandler->sendWebSocketMessage("ready");
       }
 
@@ -143,9 +143,8 @@ void eventListener(void* params) {
       last = false;
       current = false;
     }
-
+    //delay(10);
     last = current;
-    delay(150);
   }
   vTaskDelete(NULL);
 }

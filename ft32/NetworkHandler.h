@@ -19,7 +19,9 @@ public:
 
 	String createUniqueAP(const char *pSsid, const char *pPassword);
 
-	void joinExistingNetwork(const char *pSsid, const char *pPassword);
+  String createUniqueAP();
+
+	bool joinExistingNetwork(const char *pSsid, const char *pPassword);
 
 	String getIP();
 

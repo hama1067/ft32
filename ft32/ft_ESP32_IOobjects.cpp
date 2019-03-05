@@ -33,12 +33,12 @@ bool initExtension()
     delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
     if (!sx1509Object.begin(SX1509_I2C_ADDRESS))	//starten des SX1509 mit SX1509-I²C-Adresse, wenn false (Fehler erkannt -> kein SX1509 angeschlossen)
     {
-		Serial.print("SX1509-Objekt konnte nicht initialisiert werden");
+		Serial.println("[io] SX1509-Object could not be initialized.");
 		return false;  
     }
     else	//wenn true (SX1509 angeschlossen)
     {
-		Serial.println("SX1509-Objekt initialisiert");  
+		Serial.println("[io] SX1509-Object initialized.");  
     }
 	sx1509Object.clock(INTERNAL_CLOCK_2MHZ, 4);	//Einrichten der Frequenz? Warum nicht 'oben'?
 	return true;
@@ -69,7 +69,7 @@ bool CheckMaxiExtension::CheckMaxi()
     //Serial.println(error);
     if (error == 0)
     {
-      Serial.println("Maxi Board Activated!");
+      Serial.println("[io] maxi board activated");
       mBoard = "MAXI";
       ISMAXI = true;      
       //Zuweisung Ports    
@@ -91,7 +91,7 @@ bool CheckMaxiExtension::CheckMaxi()
     {
       mBoard = "MINI";
       ISMAXI = false;
-      Serial.println("Mini Board Activated!");
+      Serial.println("[io] mini board activated");
       //Zuweisung Ports    
       for(int i = 0; i < MOTOR_QTY; i++)
       {

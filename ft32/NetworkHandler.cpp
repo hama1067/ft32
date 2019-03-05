@@ -8,7 +8,7 @@
 #include "NetworkHandler.h"
 
 NetworkHandler::NetworkHandler() {
-	mSsid = "Espap";
+	mSsid = "FT-CODY-";
 	mPassword = "12345678";
 	mIP = "0.0.0.0";
 }
@@ -83,39 +83,71 @@ String NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) 
 
 }
 
-void NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPassword) {
-	Serial.print("[nwh] Connecting to ");
-	Serial.println(pSsid);
+String NetworkHandler::createUniqueAP() {
+  return createUniqueAP(mSsid, mPassword);
+}
 
-	mSsid = pSsid;
-	mPassword = pPassword;
-
-	WiFi.begin(mSsid, mPassword);
+bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPassword) {
+  bool returnCondition = false;
   int counter = 0;
-	Serial.print("[nwh] ");
-	while (WiFi.status() != WL_CONNECTED) {
+  int connectionTries = 2;
+  int connectionTryCounter = 0;
+
+	WiFi.begin(pSsid, pPassword);
+
+	while (WiFi.status() != WL_CONNECTED && connectionTryCounter < connectionTries) {
+    if(counter == 0) {  
+      Serial.print("[nwh] Connecting to ");
+      Serial.println(pSsid);
+      Serial.print("[nwh] ");
+    }
+    
 		delay(500);
+		
 		Serial.print(".");
     counter++;
-    if (counter == 10)
-    {
+    
+    if (counter == 10) {
       counter = 0;
-      Serial.print("    restart Wifi    ");
-      WiFi.disconnect();
-      delay(500);
-      WiFi.begin(mSsid, mPassword);
+      connectionTryCounter++;
+      
+      if(connectionTryCounter < connectionTries) {
+        Serial.println();
+        Serial.print("[nwh] Failed: Can not connect to given WiFi. Restart WiFi for another try [");
+        Serial.print(connectionTryCounter);
+        Serial.println("].");
+        
+        WiFi.disconnect();
+        delay(500);
+        WiFi.begin(mSsid, mPassword);
+      } else {
+        Serial.println();
+        Serial.println("[nwh] Failed: Can not connect to given WiFi. Aborted!");
+      }
     }
 	}
 
-  IPAddress myIP = WiFi.localIP();
-  mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
-	//mIP = (String)WiFi.localIP();
+  if( WiFi.status() == WL_CONNECTED ) {
+    
+    mSsid = pSsid;
+    mPassword = pPassword;
 
-	Serial.println();
-	Serial.println("[nwh] WiFi connected");
-	Serial.print("[nwh] SSID: ");
-	Serial.println(mSsid);
-	Serial.println("[nwh] IP: " + getIP());
+    IPAddress myIP = WiFi.localIP();
+    mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
+    
+    Serial.println();
+    Serial.println("[nwh] WiFi connected");
+    Serial.print("[nwh] SSID: ");
+    Serial.println(mSsid);
+    Serial.println("[nwh] IP: " + getIP());
+
+    returnCondition = true;
+  } else {
+    WiFi.disconnect();
+    returnCondition = false;
+  }
+
+  return returnCondition;
 }
 
 String NetworkHandler::getIP() {
