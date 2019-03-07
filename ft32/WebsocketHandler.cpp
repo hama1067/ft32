@@ -97,8 +97,13 @@ void webSocketTask(void* params) {
               Serial.println("[ws] Saved ciphered configuration. FT32 can now reboot.");
               wsHandler->sendWebSocketMessage("received");
 
-              delay(1000);
-              ESP.restart();
+              if(ptrSHM->running != true) {
+                Serial.println("[ws] FT32 rebooting ...");
+                delay(1000);
+                ESP.restart();
+              } else {
+                Serial.println("[ws] FT32 running state is true. Reboot aborted!");
+              }
             } else {
               Serial.println("[ws] Error: Can not save ciphered configuration.");
               wsHandler->sendWebSocketMessage("error");
