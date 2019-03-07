@@ -41,7 +41,7 @@
   */
   void printLoginData(Adafruit_SSD1306 display, String pIP, String pPasswort, String pssid);
 
-  void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid);
+  void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid, int mode);
   
   /*
   *   print Screensaver

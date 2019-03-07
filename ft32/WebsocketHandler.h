@@ -14,8 +14,10 @@
 #include <WiFi.h>
 #include "WebSocketServer.h"
 #include "WebSocketConnection.h"
+#include "CSpiffsStorage.h"
 #include "Mutex.h"
 #include "ft_ESP32_SHM.h"
+#include "ConfigHandler.h"
 
 class WebsocketHandler {
 public:

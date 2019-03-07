@@ -82,6 +82,40 @@ bool ConfigHandler::decipherNetworkConfigurationFile(String (& array) [2]) {
   return true;
 }
 
+bool ConfigHandler::cipherNetworkConfigurationFile(String *configData) {
+  bool returnCondition = false;
+  
+  String decipheredSsid = configData->substring(0, configData->indexOf('\n'));
+  String decipheredPassword = configData->substring(configData->indexOf('\n') + 1);  
+  String cipheredSsid = cipher.encryptString(decipheredSsid);
+  String cipheredPassword = cipher.encryptString(decipheredPassword);
+
+  String cipheredConfig = cipheredSsid + "\n" + cipheredPassword;
+
+  #ifdef CONFIGHANDLER_DEBUG
+    Serial.print("[cfg] configData: ");
+    Serial.println(*configData);
+    Serial.print("[cfg] cipher key: ");
+    Serial.println(cipher.getKey());
+    Serial.println("[cfg] deciphered ssid: " + decipheredSsid);
+    Serial.println("[cfg] deciphered password: " + decipheredPassword);
+    Serial.println("[cfg] ciphered ssid: " + cipheredSsid);
+    Serial.println("[cfg] ciphered password: " + cipheredPassword);
+    
+    Serial.println("[cfg] deciphered ssid: " + cipher.decryptString(cipheredSsid));
+    Serial.println("[cfg] deciphered password: " + cipher.decryptString(cipheredPassword));
+  #endif
+
+  if( checkNetworkConfigurationFile() ) {
+    mSpiffsStorage.getSpiffs().writeFile(SPIFFS, "/wlanConfiguration.txt", cipheredConfig);
+    returnCondition = true;
+  } else {
+    returnCondition = false;
+  }
+  
+  return returnCondition;
+}
+
 bool ConfigHandler::checkWebFiles() {
   bool returnCondition = false;
   int errorCounter = 0;

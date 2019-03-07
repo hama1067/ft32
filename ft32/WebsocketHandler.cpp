@@ -1,7 +1,7 @@
 #include "WebsocketHandler.h"
-#include "CSpiffsStorage.h"
 
 extern WebsocketHandler *wsHandler;
+extern ConfigHandler *nConfigHandler;
 extern SHM * ptrSHM;
 
 void webSocketTask(void* params) {
@@ -35,53 +35,40 @@ void webSocketTask(void* params) {
         *data = nWebSocketServer->getData();
         
         if (data->length() > 0) {
-          /*Serial.print("msg from client ");
-          Serial.print(wsHandler->getClientID(nClient));
-          Serial.print(": ");
-          Serial.print(*data);
-          Serial.print(" , free heap space: ");
-          Serial.println(ESP.getFreeHeap());
-          nWebSocketServer->sendData(*data);*/
-
           int delimiterIndex = data->indexOf('/');
           *payload = data->substring(delimiterIndex + 1, data->length());
           *identifier = data->substring(0, delimiterIndex);
         
           if(*identifier == "send") {
+            // command string received, saving to spiffs
             Serial.println("[ws] send");
 
             ptrSHM->webData.data = *payload;
             ptrSHM->webData.contentLength = (*payload).length();
 
-            // Save to Spiffs
+            // save to spiffs
             int counter = 0;
             bool loop_var = true;
-            while(loop_var)
-            {
-              if ((ptrSHM->mSpeicher.save(*payload) == true)||(counter > 10))
-              {
+            while(loop_var) {
+              if ((ptrSHM->mSpeicher.save(*payload) == true)||(counter > 10)) {
                   loop_var = false;
-              }
-              else
-              {
+              } else {
                   counter++; 
               }
             }
-            //  End Save to Spiffs
+            // end save to spiffs
 
             Serial.println("[ws] Payload: " + ptrSHM->webData.data);
-            
-            //nWebSocketServer->sendData("ready");
             wsHandler->sendWebSocketMessage("ready");
           } else if(*identifier == "start") {
+            // start queue
             Serial.println("[ws] start");
             ptrSHM->commonStart = 1;
             ptrSHM->commonPause = 0;
-            //ptrSHM->commonStopp = 0; //old
 
-            //nWebSocketServer->sendData("running");
             wsHandler->sendWebSocketMessage("running");    
           } else if(*identifier == "pause") {
+            // pause queue
             Serial.println("[ws] pause");
 
             if(ptrSHM->running == true && ptrSHM->commonPause == 1) {
@@ -95,14 +82,27 @@ void webSocketTask(void* params) {
 
             
           } else if(*identifier == "stop") {
+            // stop queue
             Serial.println("[ws] stop");
 
             ptrSHM->commonStart = 0;
             ptrSHM->commonPause = 0;
-            //ptrSHM->commonStopp = 1; //old
-
-            //nWebSocketServer->sendData("stopped");
+            
             wsHandler->sendWebSocketMessage("stopped");
+          } else if(*identifier == "config") {
+            // wlan config received, save to spiffs and cipher the config content
+            Serial.println("[ws] config received");
+
+            if( nConfigHandler->cipherNetworkConfigurationFile(payload) ) {
+              Serial.println("[ws] Saved ciphered configuration. FT32 can now reboot.");
+              wsHandler->sendWebSocketMessage("received");
+
+              delay(1000);
+              ESP.restart();
+            } else {
+              Serial.println("[ws] Error: Can not save ciphered configuration.");
+              wsHandler->sendWebSocketMessage("error");
+            }
           }
         }
       

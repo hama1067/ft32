@@ -25,6 +25,7 @@ public:
 	bool checkSpiffsCodyStorageFile();
 	bool checkNetworkConfigurationFile();
   bool decipherNetworkConfigurationFile(String (& array) [2]);
+  bool cipherNetworkConfigurationFile(String *configData);
   bool checkWebFiles();
 
 private:

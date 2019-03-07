@@ -37,7 +37,11 @@ ConfigHandler *nConfigHandler;
 
 SHM *ptrSHM;
 SW_queue mySW_queue;
+
+/* its highly recommended to change this key for every robot and make it NOT public! */
 char * secureCipherKey = "we8ogr78owt346troga";
+/* ********************************************************************************* */
+
 /* ***********************************************/
 
 /* Additional hardware specific modifications */
@@ -69,7 +73,7 @@ void setup() {
 
     nConfigHandler = new ConfigHandler(ptrSHM);
     nConfigHandler->setCipherKey(secureCipherKey);                // initialize cipher key
-    nConfigHandler->checkup();                                    // check system if all neccessary files are existing
+    nConfigHandler->checkup();                                    // check system if all neccessary files exists
     
     /* initialize board specific parameters like oled, buttons, motor drivers */
 
@@ -90,36 +94,52 @@ void setup() {
 
     /* check for wlanConfiguration file, try to connect, if fail, create an access point */
 
-    printOledMessage(display, "Connecting ...");
+    printOledMessage(display, "Booting ...");
 
     String ssid = "";
     bool connectToSavedWlan = false;
     String wlanConfiguration[2];
+    int connectionMode = 0;
 
-    if ( digitalRead(TASTER_PIN) == false && nConfigHandler->checkNetworkConfigurationFile() ) {      
+    if ( digitalRead(TASTER_PIN) == false && nConfigHandler->checkNetworkConfigurationFile() ) {
+      // printing oled message: connecting to existing network
+      printOledMessage(display, "Connecting to wlan\n...");
+      
+      // config file found and button pressed to connect to saved, crypted wlanConfiguration.txt      
       nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
+
+      // save decrypted ssid in wlanConfiguration[0], 
       connectToSavedWlan = nHandler.joinExistingNetwork(wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
       
       if( connectToSavedWlan ) {
         ssid = wlanConfiguration[0];
+        connectionMode = 0;             // -> "Connected to network"
+      } else {
+        printOledMessage(display, "Connection failed.\nCreating network ...");
+        connectionMode = 1;             // -> "Access point created"
       }
     } else {
       printOledMessage(display, "No network config\nfile found or button pressed.\nCreating network ...");
-      connectToSavedWlan = false;
+      connectionMode = 1;               // -> "Access point created"
+      connectToSavedWlan = false;     
     }
 
     if( !connectToSavedWlan ) {
-      ssid = nHandler.createUniqueAP();
+      ssid = nHandler.createUniqueAP(); // -> Creating unique access point "FT-CODY-*"
     }
     
-    printConnectionStatus(display, nHandler.getIP(), ssid);
+    printConnectionStatus(display, nHandler.getIP(), ssid, connectionMode);
+
+    /* creating AssetHandler (required for providing local codypp version from SPIFFS */
+    /* creating WebsocketHandler to handle incomming websocket connections */
+    /* creating initQueue_static thread to start/stop queue */
 
     ptrSHM->IPAdress = nHandler.getIP();
     nAssetHandler = new AssetHandler();
     wsHandler = new WebsocketHandler(ptrSHM);
 
     delay(10);
-    Serial.println("[main] Starting queue task");
+    Serial.println("[main] Starting queue task.");
 
     xTaskCreatePinnedToCore(
       initQueue_static,   											// Function to implement the task
@@ -129,6 +149,8 @@ void setup() {
       0,          													    // Priority of the task
       NULL,       													    // Task handle.
       1);  															        // Core where the task should run
+    
+    Serial.println("[main] System is up and running.");
 }
 
 void loop() {

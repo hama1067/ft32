@@ -105,13 +105,19 @@ void printLoginData(Adafruit_SSD1306 display, String pIP, String pPasswort, Stri
    
 }
 
-void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid) {
+void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid, int mode) {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   
   display.setCursor(0,0);
-  display.println("Connected to network");
+
+  if( mode == 0 ) {
+    display.println("Connected to network");
+  } else {
+    display.println("Access point created");
+  }
+
   display.println("--------------------");
   display.println("Network name:");
   display.println(pSsid);

@@ -90,7 +90,7 @@ String NetworkHandler::createUniqueAP() {
 bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPassword) {
   bool returnCondition = false;
   int counter = 0;
-  int connectionTries = 2;
+  int connectionTries = 5;
   int connectionTryCounter = 0;
 
 	WiFi.begin(pSsid, pPassword);
@@ -117,9 +117,8 @@ bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPasswor
         Serial.print(connectionTryCounter);
         Serial.println("].");
         
-        WiFi.disconnect();
-        delay(500);
-        WiFi.begin(mSsid, mPassword);
+        WiFi.reconnect();
+        delay(1000);
       } else {
         Serial.println();
         Serial.println("[nwh] Failed: Can not connect to given WiFi. Aborted!");
