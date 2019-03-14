@@ -73,14 +73,12 @@ String NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) 
 	IPAddress myIP = WiFi.softAPIP();
 	mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
 
-	Serial.println();
 	Serial.println("[nwh] AP created");
 	Serial.print("[nwh] SSID: ");
 	Serial.println(mSsid);
 	Serial.println("[nwh] IP: " + getIP());
 
   return mSsid;
-
 }
 
 String NetworkHandler::createUniqueAP() {
@@ -93,57 +91,64 @@ bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPasswor
   int connectionTries = 5;
   int connectionTryCounter = 0;
 
-	WiFi.begin(pSsid, pPassword);
+  Serial.println("[nwh] Joining existing network ...");
 
-	while (WiFi.status() != WL_CONNECTED && connectionTryCounter < connectionTries) {
-    if(counter == 0) {  
-      Serial.print("[nwh] Connecting to ");
-      Serial.println(pSsid);
-      Serial.print("[nwh] ");
-    }
+  if( strcmp(pSsid, "") != 0 ) {
+    WiFi.begin(pSsid, pPassword);
     
-		delay(500);
-		
-		Serial.print(".");
-    counter++;
-    
-    if (counter == 10) {
-      counter = 0;
-      connectionTryCounter++;
+    while (WiFi.status() != WL_CONNECTED && connectionTryCounter < connectionTries) {
+      if(counter == 0) {  
+        Serial.print("[nwh] Connecting to ");
+        Serial.println(pSsid);
+        Serial.print("[nwh] ");
+      }
       
-      if(connectionTryCounter < connectionTries) {
-        Serial.println();
-        Serial.print("[nwh] Failed: Can not connect to given WiFi. Restart WiFi for another try [");
-        Serial.print(connectionTryCounter);
-        Serial.println("].");
+      delay(500);
+      
+      Serial.print(".");
+      counter++;
+      
+      if (counter == 10) {
+        counter = 0;
+        connectionTryCounter++;
         
-        WiFi.reconnect();
-        delay(1000);
-      } else {
-        Serial.println();
-        Serial.println("[nwh] Failed: Can not connect to given WiFi. Aborted!");
+        if(connectionTryCounter < connectionTries) {
+          Serial.println();
+          Serial.print("[nwh] Failed: Can not connect to given WiFi. Restart WiFi for another try [");
+          Serial.print(connectionTryCounter);
+          Serial.println("].");
+          
+          WiFi.reconnect();
+          delay(1000);
+        } else {
+          Serial.println();
+          Serial.println("[nwh] Failed: Can not connect to given WiFi. Aborted!");
+        }
       }
     }
-	}
-
-  if( WiFi.status() == WL_CONNECTED ) {
-    
-    mSsid = pSsid;
-    mPassword = pPassword;
-
-    IPAddress myIP = WiFi.localIP();
-    mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
-    
-    Serial.println();
-    Serial.println("[nwh] WiFi connected");
-    Serial.print("[nwh] SSID: ");
-    Serial.println(mSsid);
-    Serial.println("[nwh] IP: " + getIP());
-
-    returnCondition = true;
+  
+    if( WiFi.status() == WL_CONNECTED ) {
+      
+      mSsid = pSsid;
+      mPassword = pPassword;
+  
+      IPAddress myIP = WiFi.localIP();
+      mIP = String(myIP[0]) + "." + String(myIP[1]) + "." + String(myIP[2]) + "." + String(myIP[3]);
+      
+      Serial.println();
+      Serial.println("[nwh] WiFi connected");
+      Serial.print("[nwh] SSID: ");
+      Serial.println(mSsid);
+      Serial.println("[nwh] IP: " + getIP());
+  
+      returnCondition = true;
+    } else {
+      WiFi.disconnect();
+      returnCondition = false;
+    }
   } else {
-    WiFi.disconnect();
     returnCondition = false;
+    Serial.println("[nwh] Error: Ssid or password parameter empty.");   
   }
 
   return returnCondition;

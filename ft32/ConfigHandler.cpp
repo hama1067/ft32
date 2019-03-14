@@ -16,22 +16,51 @@ ConfigHandler::~ConfigHandler() {
 }
 
 void ConfigHandler::checkup() {
-
+  // check (and correct if needed) for "/spiffs-cody-storage.txt" (cody program backup) file
   bool spiffsCodyStorageFileExists = checkSpiffsCodyStorageFile();
   
   if(spiffsCodyStorageFileExists && mSpiffsStorage.getFileSize("/spiffs-cody-storage.txt") > 0) {
-    Serial.println("[cfg] spiffs-cody-storage.txt found and not empty!");
+    #ifdef CONFIGHANDLER_DEBUG
+      Serial.println("[cfg] spiffs-cody-storage.txt found and not empty!");
+    #endif
     
     mSpiffsStorage.getStr(&(mPtr->webData.data));
     mPtr->webData.contentLength = mPtr->webData.data.length();
-    
-    Serial.println("[cfg] " + mPtr->webData.data);
+
+    #ifdef CONFIGHANDLER_DEBUG
+      Serial.println("[cfg] Loading content into shared memory (queue data): " + mPtr->webData.data);
+    #endif
   } else if (spiffsCodyStorageFileExists && mSpiffsStorage.getFileSize("/spiffs-cody-storage.txt") == 0) {
-    Serial.println("[cfg] spiffs-cody-storage.txt found and empty! Preparing ...");
     mPtr->webData.data = ";";
     mPtr->webData.contentLength = 1;
-
+    
     mSpiffsStorage.save(";");
+
+    #ifdef CONFIGHANDLER_DEBUG
+      Serial.println("[cfg] spiffs-cody-storage.txt found and empty! Preparing ...");
+    #endif
+  }
+
+  // check (and correct if needed) for codypp webfiles (frontend)
+  bool codyppWebFilesExists = checkWebFiles();
+
+  if (!codyppWebFilesExists) {
+    #ifdef CONFIGHANDLER_DEBUG
+      Serial.println("[cfg] Error: Codypp frontend won't work correctly. Please reflash spiffs!");
+    #endif
+  }
+
+  // check (and correct if needed) for "/wlanConfiguration.txt"
+  bool networkConfigurationFileExists = checkNetworkConfigurationFile();
+
+  if (!networkConfigurationFileExists) {
+    #ifdef CONFIGHANDLER_DEBUG
+      Serial.println("[cfg] Error: wlanConfiguration.txt does not exists. Creating file ...");
+    #endif
+
+    mSpiffsStorage.getSpiffs().writeFile(SPIFFS, "/wlanConfiguration.txt", "\n");
+  } else {
+
   }
 }
 
@@ -93,17 +122,17 @@ bool ConfigHandler::cipherNetworkConfigurationFile(String *configData) {
   String cipheredConfig = cipheredSsid + "\n" + cipheredPassword;
 
   #ifdef CONFIGHANDLER_DEBUG
-    Serial.print("[cfg] configData: ");
+    /*Serial.print("[cfg] configData: ");
     Serial.println(*configData);
     Serial.print("[cfg] cipher key: ");
     Serial.println(cipher.getKey());
     Serial.println("[cfg] deciphered ssid: " + decipheredSsid);
-    Serial.println("[cfg] deciphered password: " + decipheredPassword);
+    Serial.println("[cfg] deciphered password: " + decipheredPassword);*/
     Serial.println("[cfg] ciphered ssid: " + cipheredSsid);
     Serial.println("[cfg] ciphered password: " + cipheredPassword);
     
-    Serial.println("[cfg] deciphered ssid: " + cipher.decryptString(cipheredSsid));
-    Serial.println("[cfg] deciphered password: " + cipher.decryptString(cipheredPassword));
+    //Serial.println("[cfg] deciphered ssid: " + cipher.decryptString(cipheredSsid));
+    //Serial.println("[cfg] deciphered password: " + cipher.decryptString(cipheredPassword));
   #endif
 
   if( checkNetworkConfigurationFile() ) {
@@ -168,13 +197,13 @@ bool ConfigHandler::checkWebFiles() {
     returnCondition = false;
     
     #ifdef CONFIGHANDLER_DEBUG
-      Serial.println("[cfg] -> FAIL");
+      Serial.println("[cfg] Checking for codypp web files ... -> FAIL");
     #endif
   } else {
-    returnCondition = false;
+    returnCondition = true;
     
     #ifdef CONFIGHANDLER_DEBUG
-      Serial.println("[cfg] -> OK");
+      Serial.println("[cfg] Checking for codypp web files ... -> OK");
     #endif
   }
 

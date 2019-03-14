@@ -27,11 +27,16 @@ public:
     /*
      * 
      */
-    void sendWebSocketMessage(String msg);
+    void sendWebSocketMessage(String message);
 
-     /*
-      * 
-      */
+    /*
+     * 
+     */
+    void sendWebSocketMessageToClient(WiFiClient * pClient, String msg);
+
+    /*
+     * 
+     */
     bool addWebSocketClient(WiFiClient * pClient, WebSocketServer *nWebSocketServer);
 
     /*

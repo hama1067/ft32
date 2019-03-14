@@ -31,7 +31,6 @@ void webSocketTask(void* params) {
       }
 
       while (nClient->connected()) {
-      
         *data = nWebSocketServer->getData();
         
         if (data->length() > 0) {
@@ -95,7 +94,7 @@ void webSocketTask(void* params) {
 
             if( nConfigHandler->cipherNetworkConfigurationFile(payload) ) {
               Serial.println("[ws] Saved ciphered configuration. FT32 can now reboot.");
-              wsHandler->sendWebSocketMessage("received");
+              wsHandler->sendWebSocketMessageToClient(nClient, "received");
 
               if(ptrSHM->running != true) {
                 Serial.println("[ws] FT32 rebooting ...");
@@ -106,7 +105,7 @@ void webSocketTask(void* params) {
               }
             } else {
               Serial.println("[ws] Error: Can not save ciphered configuration.");
-              wsHandler->sendWebSocketMessage("error");
+              wsHandler->sendWebSocketMessageToClient(nClient, "error");
             }
           }
         }
@@ -182,7 +181,7 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     NULL,             /* Task input parameter */
     0,                /* Priority of the task */
     NULL,             /* Task handle. */
-    0);               /* Core where the task should run */
+    1);               /* Core where the task should run */
 
   webSocketServer->begin();
 }
@@ -252,6 +251,25 @@ void WebsocketHandler::sendWebSocketMessage(String message) {
       
       webSocketConnections[i]->pWebSocketServer->sendData(message);
     }
+  }
+
+  sendData.unlock();
+}
+
+void WebsocketHandler::sendWebSocketMessageToClient(WiFiClient * pClient, String msg) {
+  sendData.lock();
+  int clientID = getClientID(pClient);
+  
+  Serial.print("[ws] Sending msg to client ");
+  Serial.print(clientID);
+
+  if(clientID != -1 && webSocketConnections[clientID] != NULL) {
+    Serial.print(" : ");
+    Serial.println(msg);
+    
+    webSocketConnections[clientID]->pWebSocketServer->sendData(msg);
+  } else {
+    Serial.println(" failed. Client is removed or not available anymore.");
   }
 
   sendData.unlock();
