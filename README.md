@@ -6,7 +6,11 @@ Fischertechnik TXT Controller replacement based on ESP32 microcontroller with a 
 
 If you want to checkout the current cody++ web IDE version 0.5, please visit the demo [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/data/webIDEwebversion-0.5/index.html). The latest version is avaiable [here](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/data/webIDEwebversion-1.0/index.html).
 
-## Quick start
+## Installation
+
+Beside the hardware setup we also have to install several libraries to work with the arduino ide. After that we can go on with preparing the ESP32 so that Codypp will work out of the box from the internal storage.
+
+### Hardware and Arduino IDE setup
 
 Before you can start, you have to install some dependencies und you need additional hardware. Beside the ESP32 microcontroller as the main component, you will need:
 
@@ -19,12 +23,13 @@ Now you have to flash the ESP32 with the C++ software. Therefore you have to ope
 
 Make sure you have installed the following arduino libraries via the internal arduino packet manager:
 
-- Adafruit_GFX
-- Adafruit_SSD1306
+- Adafruit SSD1306 (works only with version 1.1.2, not 1.2.x)
+- Adafruit-GFX-Library (latest version, tested with 1.3.4)
+- SparkFun SX1509 (latest version, tested with 2.0.1)
 
 Now you can go on with writing the neccessary web files into the flash memory (called SPIFFS) of the ESP32. It might be difficult, but we have created some scripts to make it as easy as possible.
 
-## Writing to SPIFFS Memory in Linux
+### Writing to SPIFFS Memory in Linux
 
 Notification: Tested under Linux Mint 18 - 64bit OS.
 Download the makeSPIFFS directory from our repository and open a terminal in this directory on your local machine. 
@@ -37,7 +42,7 @@ Make sure the ESP32 is connected correctly to your computer and no Arduino conso
 
 <p align="center"><img width="55%" src="./makeSpiffs.png"></p>
 
-## Writing to SPIFFS Memory in Windows
+### Writing to SPIFFS Memory in Windows
 
 Is quite the same, but in windows, you have to install [python](https://www.python.org/downloads/) first. After that, you can execute the script. Make sure the ESP32 is connected correctly to your computer and no Arduino console is opened anymore. By default, the ESP32 should be connected to port COM4. Otherwise you have to change it in the script. For more information, please visit this documentation [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/0410Bedienungsanleitung.html).
 
@@ -47,3 +52,12 @@ That's it. Hope you enjoy our project. If you have questions or ideas, feel free
 ## Web documentation
 
 For further information to this project visit our official documentation [webpage](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik/).
+
+## FT32 Robots and Cody++ in use
+
+Video dokumentation (in german): 
+- [FT32-Codypp Pre-relase Video Dez. 2017](https://youtu.be/Vb2udfsyRjI?list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw)
+German pubils testing our Robots: 
+- [Hector-Seminar-Video](https://www.youtube.com/watch?v=EfkDjtZDj-Y&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=2)
+- [Drawing a flower with Codypp and FT32](https://www.youtube.com/watch?v=YJIpydJqEwY&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=8)
+
