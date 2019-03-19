@@ -53,6 +53,8 @@ That's it. Hope you enjoy our project. If you have questions or ideas, feel free
 
 For further information to this project visit our official documentation [webpage](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik/).
 
+<p align="center"><img width="55%" src="./FT32-robot.jpg"></p>
+
 ## FT32 Robots and Cody++ in use
 
 Video dokumentation (in german): 
