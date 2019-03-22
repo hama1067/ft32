@@ -4,7 +4,7 @@
 SW_queue::SW_queue()
 {
   //anlegen aller IO-Objekte (Schnittstelle zur Hardware)
-  Serial.println("IO-Objekte anlegen...");
+  Serial.println("[Q] IO-Objekte anlegen...");
 
   for (unsigned int i = 0; i < mMotorArray.size(); i++)	//4 Motoren anlegen (Standardkonstruktor)
   {
@@ -85,21 +85,27 @@ void SW_queue::SW_work(SHM* mSHM)
   */
 
   //Erstellen der Queue:
-  queueCreator();// startPtr, endPtr, uebergabestr);
-  printErrors();
-
+  if(uebergabestr != "")	//create queue if string is not empty
+  {
+    queueCreator();// startPtr, endPtr, uebergabestr);
+  }
+  else	//set error if string is empty
+  {
+    qCreateError = true;
+	qCreateErrorID = 9;
+  }
   //Testausgabe, ob Queue korrekt erstellt wurde (nur für Debugzwecke)
   Serial.println("[Q] Testausgabe der Queue:");
-  Serial.println(uebergabestr);
+  Serial.println("[Q] String: " + uebergabestr);
 
   commonElement* workPtr = startPtr->nextElement;
 
+  Serial.print("[Q] Startelement: ");
   Serial.println(startPtr->ID); //Ausgabe StartID: 0
-  Serial.println(endPtr->ID); //Ausgabe EndID: 0
 
   while (workPtr != endPtr)
   {
-    Serial.print(workPtr->ID);  //Ausgabe ID (z.B. 'M', 'I', etc)
+    Serial.print(char(workPtr->ID));  //Ausgabe ID (z.B. 'M', 'I', etc)
     Serial.print(" ");  //Leerzeichen, bessere Lesbarkeit
     Serial.print(workPtr->rootID);  //Ausgabe rootID (Zahl gleich bei If/EndIf bzw. While/EndWhile, sonst 0)
     Serial.print(" ");
@@ -108,6 +114,8 @@ void SW_queue::SW_work(SHM* mSHM)
     Serial.println(workPtr->val_pwm_timems_loop); //Ausgabe Wert
     workPtr = workPtr->nextElement; //Zeiger auf nächstes Element der Queue legen
   }
+  Serial.print("[Q] Endelement: ");
+  Serial.println(endPtr->ID); //Ausgabe EndID: 0
   Serial.println("[Q] Testausgabe der Queue Ende.\n");
   
   //Abarbeiten des Programms
@@ -115,12 +123,14 @@ void SW_queue::SW_work(SHM* mSHM)
   {
 	  queueWorker(mSHM);  //Uebergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
   }
+  
+  //print any errors that occurred on creating the queue or on runtime
   printErrors();
-  //Serial.println("[Q] qWorkError: " + qWorkError);	//display if any runtime-errors occured
 
   //Queue löschen
   queueDelete();// startPtr, endPtr);
 
+  //reset Errors
   qCreateError = false;
   qCreateErrorID = 0;
   qWorkError = false;  
@@ -143,8 +153,9 @@ void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	
 	Serial.println("[Q] Queue geloescht...\n");
 }
 
-int SW_queue::stoi_ft(String& uestring, int& strcounter)
+int SW_queue::stoi_ft(String& uestring, unsigned int& strcounter)
 {
+	/* 
 	String blockstr = "";	//Hilfsstring, speichert die einzulesende Zahl
 	blockstr += uestring.charAt(strcounter);	//Erste Ziffer einlesen
 	while (isDigit(uestring.charAt(strcounter + 1)))	//naechstes Zeichen ist eine Ziffer?
@@ -153,6 +164,26 @@ int SW_queue::stoi_ft(String& uestring, int& strcounter)
 		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhaengen
 	}
 	return blockstr.toInt();	//gibt es unter Arduino
+	*/
+	 
+	String blockstr = "";	//stores number-to-read as string
+	while (strCounter < uestring.length())	//repeat while strCounter points on valid char of uestring
+	{
+		if(isDigit(uestring.charAt(strCounter)))	//check if character is a digit
+		{
+			blockstr += uestring.charAt(strCounter);	//add digit to string
+			strCounter++;	//increase counter onto next character, may exceed string-length
+		}
+		else	//if character is a letter
+		{
+			strCounter = uestring.length();	//counter will exceed string, loop will be exited
+		}
+	}
+	if ("" == blockstr)	//if blockstr is empty fill it with a zero to prevent errors in return line
+	{
+		blockstr = "0";
+	}
+	return blockstr.toInt();
 }
 
 void SW_queue::checkChar(int& strCounter, char zeichen)
@@ -215,6 +246,8 @@ void SW_queue::printErrors()
 	case 8:
 		Serial.println("Falscher Identifier");
 		break;
+	case 9:
+		Serial.println("No data recieved");
 	default:
 		Serial.println("Unbekannter Fehler, qCreateErrorID: " + qCreateErrorID);
 		break;
@@ -223,7 +256,7 @@ void SW_queue::printErrors()
 	Serial.print("[Q worker] qWorkErrorID = " + String(qWorkErrorID) + ": ");
 	switch (qWorkErrorID)
 	{
-	case 0:
+	case 0:	//no errors occurred
 		Serial.println("Kein Fehler beim Abarbeiten der Queue");
 		break;
 	default:

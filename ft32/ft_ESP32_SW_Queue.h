@@ -4,10 +4,9 @@
 #include <string.h> //für String-Operationen
 #include <Arduino.h>  //für String-Operationen
 #include <array>  //Library erlaubt Zugriffssicherung bei Arrays
-//#include "ft_ESP32_queueCreator.h"  //Aufbauen der Queue
+
 #include "ft_ESP32_SHM.h" //gemeinsamer Speicher (SHared Memory)
 #include "ft_ESP32_IOobjects.h" //Klassen der Ausgänge (Hardwaretreiber)
-//#include "ft_ESP32_queueWorker.h" //abarbeiten der Queue
 
 using namespace std;  //zum Handling der Arrays (für Zugriffssicherung)
 
@@ -28,16 +27,80 @@ struct commonElement
 class SW_queue
 {
 public:
+	/**
+	 *
+	 *  @param
+	 *  @return
+	*/
 	SW_queue();
+	
+	/** destructor, deletes startPtr and endPtr
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	~SW_queue();
+	
+	/** main method creates queue from SHM-data, runs program, communicates with HMI
+	 *
+	 *  @param pointer on shared-memory for "uebergabestr"
+	 *  @return ---
+	*/
 	void SW_work(SHM* mSHM);
+	
+	/** creates queue on heap, checks for syntax and logic errors
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	void queueCreator();// commonElement*& startPtr, commonElement*& endPtr, String& uebergabestr);
+	
+	/** runs program according on queue. communicates with HMI (for pause and stop)
+	 *
+	 *  @param pointer on shared-memory for pause, stop etc.
+	 *  @return ---
+	*/
 	void queueWorker(SHM* mSHM);
+	
+	/** deletes queue after program finished
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	void queueDelete();// commonElement*& startPtr, commonElement*& endPtr);
+	
+	/**
+	 *
+	 *  @param
+	 *  @return ---
+	*/
 	void setBoardType(bool pMaxi);
 
-	int stoi_ft(String& uestring, int& strCounter);
+	/** extracts a number from a string starting at a given position 
+	 *  necessary, as string.toInt() from Arduino only supports numbers at the beginning of a string.
+	 *  Note: this method does not check for valid positions of strCounter.
+	 *		In fact it's even required that there is a non-digit key after the number...
+	 *  
+	 *  @param uestring - string the number will be extracted from
+	 *  @param strCounter - position of the first digit
+	 *  @return extracted number as integer
+	*/
+	int stoi_ft(String& uestring, unsigned int& strCounter);
+	
+	/** checks for specific char in "uebergabestr" at given counter-position. 
+	 *  Drops error if character is not on this position: qCreateError & qCreateErrorID
+	 *
+	 *  @param strCounter - position where the char should be
+	 *  @param zeichen - char that should be checked for
+	 *  @return ---
+	*/
 	void checkChar(int& strCounter, char zeichen);
+	
+	/** prints errors via serial that caused creator or worker to stop
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	void printErrors();
 
 private:
