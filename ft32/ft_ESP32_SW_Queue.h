@@ -85,7 +85,7 @@ public:
 	 *  @param strCounter - position of the first digit
 	 *  @return extracted number as integer
 	*/
-	int stoi_ft(String& uestring, unsigned int& strCounter);
+	int stoi_ft(String& uestring, int& strCounter);
 	
 	/** checks for specific char in "uebergabestr" at given counter-position. 
 	 *  Drops error if character is not on this position: qCreateError & qCreateErrorID

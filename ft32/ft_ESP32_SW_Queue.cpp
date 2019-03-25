@@ -153,37 +153,23 @@ void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	
 	Serial.println("[Q] Queue geloescht...\n");
 }
 
-int SW_queue::stoi_ft(String& uestring, unsigned int& strcounter)
+int SW_queue::stoi_ft(String& uestring, int& strCounter)
 {
-	/* 
-	String blockstr = "";	//Hilfsstring, speichert die einzulesende Zahl
-	blockstr += uestring.charAt(strcounter);	//Erste Ziffer einlesen
-	while (isDigit(uestring.charAt(strcounter + 1)))	//naechstes Zeichen ist eine Ziffer?
-	{
-		strcounter++;	//counter auf dieses Zeichen legen
-		blockstr += uestring.charAt(strcounter);	//Zeichen an den Hilfsstring anhaengen
-	}
-	return blockstr.toInt();	//gibt es unter Arduino
-	*/
-	 
 	String blockstr = "";	//stores number-to-read as string
-	while (strCounter < uestring.length())	//repeat while strCounter points on valid char of uestring
+	if (strCounter < uestring.length() && isDigit(uestring.charAt(strCounter)))	//check if first char is valid
 	{
-		if(isDigit(uestring.charAt(strCounter)))	//check if character is a digit
-		{
-			blockstr += uestring.charAt(strCounter);	//add digit to string
-			strCounter++;	//increase counter onto next character, may exceed string-length
-		}
-		else	//if character is a letter
-		{
-			strCounter = uestring.length();	//counter will exceed string, loop will be exited
-		}
+		blockstr += uestring.charAt(strCounter);	//add first digit to string
 	}
-	if ("" == blockstr)	//if blockstr is empty fill it with a zero to prevent errors in return line
+	while ((strCounter + 1 < uestring.length()) && (isDigit(uestring.charAt(strCounter + 1))))	//check if next char is valid
+	{
+		strCounter++;	//increase counter onto next (valid) digit
+		blockstr += uestring.charAt(strCounter);	//add digit to string
+	}
+	if (blockstr.length() == 0)	//if blockstr is empty fill it with a zero to prevent errors in return line
 	{
 		blockstr = "0";
 	}
-	return blockstr.toInt();
+	return blockstr.toInt();	//convert number-string to integer, return value
 }
 
 void SW_queue::checkChar(int& strCounter, char zeichen)
