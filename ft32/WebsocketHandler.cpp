@@ -107,6 +107,10 @@ void webSocketTask(void* params) {
               Serial.println("[ws] Error: Can not save ciphered configuration.");
               wsHandler->sendWebSocketMessageToClient(nClient, "error");
             }
+          } else if(*identifier == "ping") {
+            Serial.print("[ws] Received msg from client ");
+            Serial.print(get
+            wsHandler->sendWebSocketMessageToClient(nClient, "pong");
           }
         }
       
