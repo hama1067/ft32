@@ -53,29 +53,75 @@ const byte SX1509_I2C_PIN_SCL = 22;
 
 extern SX1509 sx1509Object;        //i2c SDA = PIN 21, SCL = PIN 22
 
-bool initExtension();
+//bool initExtension();
 
 class CheckMaxiExtension
 {
 public:
-  CheckMaxiExtension();
-  CheckMaxiExtension(byte);
-  bool CheckMaxi();
+	/** default constructor, stores public SX1509_I2C_ADDRESS in mAddress
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
+	CheckMaxiExtension();
+	
+	/** constructor, stores given address in mAddress
+	 *
+	 *  @param address-byte, I2C-Address of SX1509-extension board
+	 *  @return ---
+	*/
+	CheckMaxiExtension(byte);
+	
+	/** Checks if extension board is connected, does init, manages ports depending on board-type
+	 *
+	 *  @param ---
+	 *  @return Flag (bool) showing if extension board is connected (true) or not (false)
+	*/
+	bool CheckMaxi();
 private:
-  String mBoard;
-  byte mAddress;
+	String mBoard;
+	byte mAddress;
 };
 
 class Motor
 {
 public:
+	/** default constructor, resets all values to 0
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	Motor();	//Standardkonstruktor, setzt alles auf 0;
+	
+	/** constructor, sets pins (PWM, direction) according to board-type. 
+	 *
+	 *  @param motorNr 0..3
+	 *  @return ---
+	*/
 	Motor(unsigned int motorNr);	//Konstruktor, Motor-Nr (0..3), weist zu: Pin-Nr für PWM, Pin-Nr für Richtung
 	//Destructor is missing -> detach PWM-Generator from pin!
 	
+	/** sets new motor-values (direction, speed)
+	 *
+	 *  @param direction (bool) eg. left-true right-false
+	 *  @param speed (unsigned int) qualitative value -8..0..8 manipulates internal pwm-signal
+	 *  @return ---
+	*/
 	void setValues(bool, unsigned int);	//neue Motorwerte setzen (Richtung, Drehzahl)
+	
+	/** sets pins and pwm value with attributes
+	 *
+	 *  @param ---
+	 *  @return ---
+	*/
 	void reRun();	//bei Aufruf werden erneut die Pins und PWM mit den Attributen gesetzt
 	//evtl. eine Methode Stop einbauen
+	
+	/** attaches pins to pwm-generators according to maxi- or mini-board
+	 *
+	 *  @param pMaxi (bool) manipulates attachment of direction pins
+	 *  @return ---
+	*/
 	void setMaxi(bool pMaxi);
 private:
 	unsigned int mMotorNr;	//Motornummer 0..3, wird bei Erstellung des Objekts angelegt
@@ -113,7 +159,7 @@ public:
 	Lampe(unsigned int);	//Konstruktor, Lampe-Nr (0..7), weist zu: Pin-Nr für PWM
 	void setValues(unsigned int);	//neue Lampenwerte setzen (Aktiv, Helligkeit)
 	void reRun();	//bei Aufruf werden erneut die Pins und PWM mit den Attributen gesetzt
-  void setMaxi(bool pMaxi);
+	void setMaxi(bool pMaxi);
 private:
 	unsigned int mLampeNr;	//LampenNr 0..7, wird bei Erstellung des Objekts angelegt
 	unsigned int mPortNrPWM;	//Portnummer für PWM, wird bei Erstellung des Objekts zugewiesen
@@ -136,7 +182,7 @@ public:
 	unsigned int getValueAnalog();
 	unsigned int getValueDigital();
 	void setValueDigital(bool);	//Digitalen Ausgang setzen (HIGH/LOW)
-  void setMaxi(bool pMaxi);
+	void setMaxi(bool pMaxi);
 private:
 	unsigned int mInputNummer;
 	unsigned int mInputPortNr;

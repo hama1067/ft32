@@ -32,7 +32,7 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] = {
   B00000000, B00110000 
 };
 
-void InitOled(Adafruit_SSD1306 display) {      
+void InitOled(Adafruit_SSD1306 &display) {      
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(WHITE); 
@@ -41,7 +41,7 @@ void InitOled(Adafruit_SSD1306 display) {
   // display.display();
 };
  
-void printVerbindungsaufbau(Adafruit_SSD1306 display) {
+void printVerbindungsaufbau(Adafruit_SSD1306 &display) {
   // display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
   Serial.println("Display Ausgabe Verbinden.............................");
   display.clearDisplay();
@@ -53,7 +53,7 @@ void printVerbindungsaufbau(Adafruit_SSD1306 display) {
   display.display();
 }
 
-void printVerbunden(Adafruit_SSD1306 display) {
+void printVerbunden(Adafruit_SSD1306 &display) {
   Serial.println("Display Ausgabe Verbunden............................");
   display.clearDisplay();
   display.setTextSize(1);
@@ -65,7 +65,7 @@ void printVerbunden(Adafruit_SSD1306 display) {
   delay(2000);
 }
 
-void printLoginData(Adafruit_SSD1306 display, String pIP, String pPasswort, String pssid) {
+void printLoginData(Adafruit_SSD1306 &display, String pIP, String pPasswort, String pssid) {
   
   unsigned int i=0;
 
@@ -105,7 +105,7 @@ void printLoginData(Adafruit_SSD1306 display, String pIP, String pPasswort, Stri
    
 }
 
-void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid, int mode) {
+void printConnectionStatus(Adafruit_SSD1306 &display, String pIP, String pSsid, int mode) {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -129,7 +129,7 @@ void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid, i
   display.display();
 }
 
-void printOledMessage(Adafruit_SSD1306 display, String message) {
+void printOledMessage(Adafruit_SSD1306 &display, String message) {
   int indexOffset = 0;
   
   Serial.print("[oled] new message: ");

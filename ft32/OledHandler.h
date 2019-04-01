@@ -23,25 +23,25 @@
   /*
   *   display Initialisation
   */
-  void InitOled(Adafruit_SSD1306 display);
+  void InitOled(Adafruit_SSD1306 &display);
   
   /*
   *   display Verbindungsaufbau while login
   */
-  void printVerbindungsaufbau(Adafruit_SSD1306 display);
+  void printVerbindungsaufbau(Adafruit_SSD1306 &display);
   
   /*
   *   display Verbunden after login
   */
-  void printVerbunden(Adafruit_SSD1306 display);
+  void printVerbunden(Adafruit_SSD1306 &display);
   
   /*
   *   get the ip address of the server
   *   and print on Oled e.g.: 192.168.4.1
   */
-  void printLoginData(Adafruit_SSD1306 display, String pIP, String pPasswort, String pssid);
+  void printLoginData(Adafruit_SSD1306 &display, String pIP, String pPasswort, String pssid);
 
-  void printConnectionStatus(Adafruit_SSD1306 display, String pIP, String pSsid, int mode);
+  void printConnectionStatus(Adafruit_SSD1306 &display, String pIP, String pSsid, int mode);
   
   /*
   *   print Screensaver
@@ -49,6 +49,6 @@
   */
   //  void printScreensave(Adafruit_SSD1306 display);
   
-  void printOledMessage(Adafruit_SSD1306 display, String message);
+  void printOledMessage(Adafruit_SSD1306 &display, String message);
 
 #endif

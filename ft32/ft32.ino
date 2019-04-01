@@ -46,7 +46,7 @@ char * secureCipherKey = "we8ogr78owt346troga";
 
 /* Additional hardware specific modifications */
 CButton hmiTaster;
-Adafruit_SSD1306 display(4);
+Adafruit_SSD1306 display(128, 64, &Wire, 4);
 CheckMaxiExtension BoardType;
 /* ********************************************/
 
@@ -78,7 +78,7 @@ void setup() {
     /* initialize board specific parameters like oled, buttons, motor drivers */
 
     DisableMotorBoard();                        					        // turn off motor driver
-    initExtension();                            					        // initialize extension board
+    //initExtension();                            					        // initialize extension board
 
     bool maxiboard = BoardType.CheckMaxi();     					        // detecting board type (small or big one -> HWG, HWK)
     mySW_queue.setBoardType(maxiboard);         					        // set board specific port properties 

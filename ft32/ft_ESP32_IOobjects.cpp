@@ -7,19 +7,6 @@ Autor: Johannes Marquart
 #include <Arduino.h>
 //#include <SparkFunSX1509.h>
 
-/*
-//Prototypen zur Simulation für VisualStudio
-void ledcAttachPin(int, int) {}
-void ledcSetup(int, int, int) {}
-void ledcWrite(int, int) {}
-void pinMode(int, int) {}
-void digitalWrite(int, int) {}
-unsigned int digitalRead(unsigned int) { return 0; }
-unsigned int analogRead(unsigned int) { return 0; }
-void delay(double) {}
-//Ende der Prototypen für VS
-*/
-
 SX1509 sx1509Object;        //i2c SDA = PIN 21, SCL = PIN 22
 int initRecCalls = 0;  
 int PORT_M_PWM[MOTOR_QTY];// = {};//Output-Pins Motor-Drehzahl
@@ -27,7 +14,7 @@ int PORT_L_PWM[LAMP_QTY]; //Output-Pins Lampe, werden hier über den selben Trei
 int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
 bool ISMAXI = false;
 
-
+/*
 bool initExtension()
 {
     delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
@@ -43,6 +30,7 @@ bool initExtension()
 	sx1509Object.clock(INTERNAL_CLOCK_2MHZ, 4);	//Einrichten der Frequenz? Warum nicht 'oben'?
 	return true;
 }
+*/
 
 CheckMaxiExtension::CheckMaxiExtension()
 {
@@ -59,54 +47,52 @@ CheckMaxiExtension::CheckMaxiExtension(byte address)
 
 bool CheckMaxiExtension::CheckMaxi()
 {
-    int error;
-    //Serial.println("Suche nach: ");
-    //Serial.println(mAddress);
-    Wire.beginTransmission(mAddress);
-    error = Wire.endTransmission();           // Check if ExtensionBoard is connected
-    //Serial.println(error);
-    //Serial.println("Error: ");
-    //Serial.println(error);
-    if (error == 0)
-    {
-      Serial.println("[io] maxi board activated");
-      mBoard = "MAXI";
-      ISMAXI = true;      
-      //Zuweisung Ports    
-      for(int i = 0; i < MOTOR_QTY; i++)
-      {
-        PORT_M_PWM[i] = MAXI_PORT_M_PWM[i];
-      }
-      for(int i = 0; i < LAMP_QTY; i++)
-      {
-        PORT_L_PWM[i] = MAXI_PORT_L_PWM[i];
-      }
-      for(int i = 0; i < DAIN_QTY; i++)
-      {
-        PORT_IN[i] = MAXI_PORT_IN[i];
-      }
-      return true;
-    }
-    else
-    {
-      mBoard = "MINI";
-      ISMAXI = false;
-      Serial.println("[io] mini board activated");
-      //Zuweisung Ports    
-      for(int i = 0; i < MOTOR_QTY; i++)
-      {
-        PORT_M_PWM[i] = MINI_PORT_M_PWM[i];
-      }
-      for(int i = 0; i < LAMP_QTY; i++)
-      {
-        PORT_L_PWM[i] = MINI_PORT_L_PWM[i];
-      }
-      for(int i = 0; i < DAIN_QTY; i++)
-      {
-        PORT_IN[i] = MINI_PORT_IN[i];
-      }
-      return false;
-    }
+	delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
+	if (!sx1509Object.begin(SX1509_I2C_ADDRESS))	//starten des SX1509 mit SX1509-I²C-Adresse, wenn false (Fehler erkannt -> kein SX1509 angeschlossen)
+	{
+		Serial.println("[io] SX1509-Object could not be initialized.");
+
+		mBoard = "MINI";
+		ISMAXI = false;
+		Serial.println("[io] mini board activated");
+		//Zuweisung Ports    
+		for (int i = 0; i < MOTOR_QTY; i++)
+		{
+			PORT_M_PWM[i] = MINI_PORT_M_PWM[i];
+		}
+		for (int i = 0; i < LAMP_QTY; i++)
+		{
+			PORT_L_PWM[i] = MINI_PORT_L_PWM[i];
+		}
+		for (int i = 0; i < DAIN_QTY; i++)
+		{
+			PORT_IN[i] = MINI_PORT_IN[i];
+		}
+		return false;
+	}
+	else	//wenn true (SX1509 angeschlossen)
+	{
+		Serial.println("[io] SX1509-Object initialized.");
+		sx1509Object.clock(INTERNAL_CLOCK_2MHZ, 4);	//Einrichten der Frequenz
+
+		Serial.println("[io] maxi board activated");
+		mBoard = "MAXI";
+		ISMAXI = true;
+		//Zuweisung Ports    
+		for (int i = 0; i < MOTOR_QTY; i++)
+		{
+			PORT_M_PWM[i] = MAXI_PORT_M_PWM[i];
+		}
+		for (int i = 0; i < LAMP_QTY; i++)
+		{
+			PORT_L_PWM[i] = MAXI_PORT_L_PWM[i];
+		}
+		for (int i = 0; i < DAIN_QTY; i++)
+		{
+			PORT_IN[i] = MAXI_PORT_IN[i];
+		}
+		return true;
+	}
 }
 
 Motor::Motor()
@@ -115,7 +101,7 @@ Motor::Motor()
 	//Evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
 	pinMode(PIN_M_INH, OUTPUT);
 	digitalWrite(PIN_M_INH, LOW);
-  
+
 	mMotorNr = 0;
 	mPortNrPWM = 0;
 	mPortNrDir = 0;
