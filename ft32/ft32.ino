@@ -3,7 +3,8 @@
  *
  *  Created on: Mar 04, 2019
  *      Author: joseph
- *      version: 1.5 beta
+ *      version: v1.0.2 alpha
+ *      current stable release: v1.0.1 beta
  *  
  *  description:
  *  
@@ -139,7 +140,7 @@ void setup() {
     wsHandler = new WebsocketHandler(ptrSHM);
 
     delay(10);
-    Serial.println("[main] Starting queue task.");
+    Serial.println("[main] Starting queue task ...");
 
     xTaskCreatePinnedToCore(
       initQueue_static,   											// Function to implement the task
@@ -150,7 +151,7 @@ void setup() {
       NULL,       													    // Task handle.
       1);  															        // Core where the task should run
     
-    Serial.println("[main] System is up and running.");
+    Serial.println("[main] => System is up and running.");
 }
 
 void loop() {

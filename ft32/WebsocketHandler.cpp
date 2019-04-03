@@ -109,7 +109,8 @@ void webSocketTask(void* params) {
             }
           } else if(*identifier == "ping") {
             Serial.print("[ws] Received msg from client ");
-            Serial.print(get
+            Serial.print(wsHandler->getClientID(nClient));
+            Serial.println(": ping");
             wsHandler->sendWebSocketMessageToClient(nClient, "pong");
           }
         }

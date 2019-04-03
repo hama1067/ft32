@@ -23,7 +23,7 @@ Now you have to flash the ESP32 with the C++ software. Therefore you have to ope
 
 Make sure you have installed the following arduino libraries via the internal arduino packet manager:
 
-- Adafruit SSD1306 (works only with version 1.1.2, not 1.2.x)
+- Adafruit SSD1306 (latest version, tested with 1.2.9)
 - Adafruit-GFX-Library (latest version, tested with 1.3.4)
 - SparkFun SX1509 (latest version, tested with 2.0.1)
 
