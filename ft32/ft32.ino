@@ -102,25 +102,32 @@ void setup() {
     String wlanConfiguration[2];
     int connectionMode = 0;
 
-    if ( digitalRead(TASTER_PIN) == false && nConfigHandler->checkNetworkConfigurationFile() ) {
-      // printing oled message: connecting to existing network
-      printOledMessage(display, "Connecting to wlan\n...");
-      
-      // config file found and button pressed to connect to saved, crypted wlanConfiguration.txt      
-      nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
+    if ( digitalRead(TASTER_PIN) == true ) {
+      // printing oled message: Check configuration file
+      printOledMessage(display, "Check configuration\nfile ...");
 
-      // save decrypted ssid in wlanConfiguration[0], 
-      connectToSavedWlan = nHandler.joinExistingNetwork(wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
-      
-      if( connectToSavedWlan ) {
-        ssid = wlanConfiguration[0];
-        connectionMode = 0;             // -> "Connected to network"
+      if( nConfigHandler->checkNetworkConfigurationFile() ) {  
+        // config file found and button not pressed to connect to saved, crypted wlanConfiguration.txt      
+        nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
+
+        // printing oled message: connecting to existing network
+        printOledMessage(display, "Connecting to wlan\n...\n\n=> " + wlanConfiguration[0]);
+  
+        // save decrypted ssid in wlanConfiguration[0], 
+        connectToSavedWlan = nHandler.joinExistingNetwork(wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
+        
+        if( connectToSavedWlan ) {
+          ssid = wlanConfiguration[0];
+          connectionMode = 0;             // -> "Connected to network"
+        } else {
+          printOledMessage(display, "Connection failed.\nCreating network ...");
+          connectionMode = 1;             // -> "Access point created"
+        }
       } else {
-        printOledMessage(display, "Connection failed.\nCreating network ...");
-        connectionMode = 1;             // -> "Access point created"
+        printOledMessage(display, "No network config\nfile found!\nCreating network ...");
       }
     } else {
-      printOledMessage(display, "No network config\nfile found or button pressed.\nCreating network ...");
+      printOledMessage(display, "Button pressed.\nCreating network ...");
       connectionMode = 1;               // -> "Access point created"
       connectToSavedWlan = false;     
     }
