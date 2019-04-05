@@ -79,7 +79,7 @@ void setup() {
     /* initialize board specific parameters like oled, buttons, motor drivers */
 
     DisableMotorBoard();                        					        // turn off motor driver
-    //initExtension();                            					        // initialize extension board
+    // initExtension();                            					      // initialize extension board
 
     bool maxiboard = BoardType.CheckMaxi();     					        // detecting board type (small or big one -> HWG, HWK)
     mySW_queue.setBoardType(maxiboard);         					        // set board specific port properties 
