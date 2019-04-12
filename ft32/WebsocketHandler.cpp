@@ -111,11 +111,14 @@ void webSocketTask(void* params) {
             /* Serial.print("[ws] Received msg from client ");
             Serial.print(wsHandler->getClientID(nClient));
             Serial.println(": ping"); */
-            wsHandler->sendWebSocketMessageToClient(nClient, "pong");
+            wsHandler->sendWebSocketMessageToClient(nClient, "pong");   
           }
         }
       
         delay(10); // Delay needed for receiving the data correctly
+
+
+        
       }
     }
   } else {
@@ -158,11 +161,18 @@ void eventListener(void* params) {
   vTaskDelete(NULL);
 }
 
-WebsocketHandler::WebsocketHandler(SHM *pSHM) {
+WebsocketHandler::WebsocketHandler(SHM *pSHM) : websocketConnectionStatus({false, false, false, false}) {
   Serial.println();
   Serial.print("[ws] Joining SHM container with status ");
   mSHM=pSHM;
   Serial.println(mSHM->commonStart);
+
+  Timer::getInstance()->setTimeout(5);
+  Timer::getInstance()->setCallbackFunction(websocketTimeoutEvent);
+  
+  if(!Timer::getInstance()->start()) {
+    Serial.println("[timer] Can not start timer!");
+  }
   
   addClient.unlock();
   removeClient.unlock();
@@ -317,4 +327,31 @@ void WebsocketHandler::handleWebSocketRequests() {
 void WebsocketHandler::openWebSocket() {
   Serial.println("[ws] Opening websocket ports...");
   webSocketServer->begin();
+}
+
+void WebsocketHandler::checkForWebsocketTimeout() {
+  Serial.println("[ws] Check for websocket timeout...");
+}
+
+void WebsocketHandler::websocketTimeoutEvent() {
+  wsHandler->websocketTimedOut();
+}
+
+void WebsocketHandler::websocketTimedOut() {
+  Serial.println("[ws] websocket timeout!");
+
+  // websocket connection 0
+  if(websocketConnectionStatus[0] == true) {
+    // flag = true -> ping received
+    websocketConnectionStatus[1] = true;
+    // reset flag
+    websocketConnectionStatus[0] = false;
+  } else {
+    // flag = false -> ping not received
+    websocketConnectionStatus[1] = false;
+    // reset flag
+    websocketConnectionStatus[0] = false;   
+  }
+
+
 }
