@@ -29,7 +29,7 @@ Make sure you have installed the following arduino libraries via the internal ar
 
 Now you can go on with writing the necessary web files into the flash memory (called SPIFFS) of the ESP32. It might be difficult, but we have created a tutorial to make it as easy as possible.
 
-### Writing to SPIFFS Memory
+### Writing files to SPIFFS Memory
 
 Tested under:
 - Windows 10 - 64bit OS, Arduino IDE 1.8.7
@@ -39,18 +39,13 @@ If you want to write the necessary web and configuration files to the internal s
 
 First of all you have to download the plugin from its github [documentation page](https://github.com/me-no-dev/arduino-esp32fs-plugin/releases/download/1.0/ESP32FS-1.0.zip). After that, extract the archive to ``` <home_dir>/Arduino/tools/```
 
-In some case you have to create a tools directory in your arduino sketchbook directory (after extracting the downloaded archive, the path the path will look like ``` <home_dir>/Arduino/tools/ESP32FS/tool/esp32fs.jar ```). Now you can restart your arduino ide. A new menu entry should be available under
+In some case you have to create a tools directory in your arduino sketchbook directory (after extracting the downloaded archive, the path the path will look like ``` <home_dir>/Arduino/tools/ESP32FS/tool/esp32fs.jar ```). Furthermore a directory ```/data``` with all necessary Cody++ web files has to be in the current arduino project directory. Now you can restart your arduino ide. A new menu entry should be available under "Tools" (ESP32 Sketch Data Upload).
 
-Make sure the ESP32 is connected correctly to your computer and no Arduino console is opened anymore. By default, the ESP32 should be connected to port /dev/ttyUSB0. For more information, please visit this documentation [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/0410Bedienungsanleitung.html).
+<p align="center"><img width="55%" src="./arduino-spiffs-upload-menu.png"></p>
 
-<p align="center"><img width="55%" src="./arduino-spiffs-upload"></p>
+Make sure the ESP32 is connected correctly to your computer and no Arduino console is opened anymore. By default, the ESP32 should be connected to port /dev/ttyUSB0. After uploading the spiffs files you can go on with compiling and flashing the source code. For more information, please visit this documentation [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/0410Bedienungsanleitung.html). That's it. Hope you enjoy our project. If you have questions or ideas, feel free to contact us.
 
-### Writing to SPIFFS Memory in Windows
-
-Is quite the same, but in windows, you have to install [python](https://www.python.org/downloads/) first. After that, you can execute the script. Make sure the ESP32 is connected correctly to your computer and no Arduino console is opened anymore. By default, the ESP32 should be connected to port COM4. Otherwise you have to change it in the script. For more information, please visit this documentation [page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik-Software-HMI/0410Bedienungsanleitung.html).
-
-That's it. Hope you enjoy our project. If you have questions or ideas, feel free to contact us.
-
+<p align="center"><img width="55%" src="./arduino-spiffs-upload.png"></p>
 
 ## Web documentation
 
@@ -66,5 +61,4 @@ Video dokumentation (in german):
 German pubils testing our Robots:
 - [Hector-Seminar-Video](https://www.youtube.com/watch?v=EfkDjtZDj-Y&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=2)
 - [Drawing a flower with Codypp and FT32](https://www.youtube.com/watch?v=YJIpydJqEwY&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=8)
-
 - [Drawing a clef with Codypp and FT32](https://www.youtube.com/watch?v=8gbNc6OlCrc)
