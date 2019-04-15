@@ -18,6 +18,7 @@
 #include "Mutex.h"
 #include "ft_ESP32_SHM.h"
 #include "ConfigHandler.h"
+#include "Timer.h"
 
 class WebsocketHandler {
 public:
@@ -58,13 +59,51 @@ public:
      * 
      */
     void openWebSocket();
-    
+
+    /*
+     * 
+     */
+    bool handleWebsocketTimeout(int clientID);
+
+    /*
+     * 
+     */
+    static void websocketTimeoutEvent();
+
+    /*
+     * 
+     */
+    void websocketTimedOut();
+
+    /*
+     * 
+     */
+    void setWebsocketFlag(int clientID, bool mStatus);
+
+    /*
+     * 
+     */
+    bool getWebsocketFlag(int clientID);
+
+    /*
+     * 
+     */
+    void setWebsocketPingReceived(int clientID, bool mStatus);
+
+    /*
+     * 
+     */
+    bool getWebsocketPingReceived(int clientID);
+        
 private:
     int clientCount;
     WebSocketConnection **webSocketConnections;
     WiFiServer *webSocketServer;
 
-    Mutex addClient, removeClient, sendData, clientID;
+    /* [timeoutFlagWS1, pingReceivedWS1, timeoutFlagWS2, pingReceivedWS2] */
+    bool websocketConnectionStatus[4];
+
+    Mutex addClient, removeClient, sendData, clientID, accessFlag;
 
     SHM *mSHM;
 };

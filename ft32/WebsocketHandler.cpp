@@ -14,14 +14,15 @@ void webSocketTask(void* params) {
 
   if(wsHandler->addWebSocketClient(nClient, nWebSocketServer)) {
     if(nClient->connected() && nWebSocketServer->handshake(*nClient)) {
+      int websocketClientID = wsHandler->getClientID(nClient);
       
       Serial.print("[ws] Handshake with client ");
-      Serial.print(wsHandler->getClientID(nClient));
+      Serial.print(websocketClientID);
       Serial.println(" successfully done.");
       
       Serial.println("[ws] Establishing connection...");
       
-      //Update state
+      // Update state
       if( ptrSHM->commonStart == 1 && ptrSHM->commonPause == 0 ) {
     	  wsHandler->sendWebSocketMessage("running");
       } else if( ptrSHM->commonPause == 1 ) {
@@ -29,6 +30,10 @@ void webSocketTask(void* params) {
       } else if (ptrSHM->mSpeicher.getFileSize("/spiffs-cody-storage.txt") > 0) {
     	  wsHandler->sendWebSocketMessage("ready");
       }
+
+      // Timer flag states
+      wsHandler->setWebsocketFlag(websocketClientID, true);
+      wsHandler->setWebsocketPingReceived(websocketClientID, true);
 
       while (nClient->connected()) {
         *data = nWebSocketServer->getData();
@@ -111,14 +116,20 @@ void webSocketTask(void* params) {
             /* Serial.print("[ws] Received msg from client ");
             Serial.print(wsHandler->getClientID(nClient));
             Serial.println(": ping"); */
+
+            // ping event -> flag to true
+            wsHandler->setWebsocketFlag(websocketClientID, true);
             wsHandler->sendWebSocketMessageToClient(nClient, "pong");   
           }
         }
       
         delay(10); // Delay needed for receiving the data correctly
 
-
-        
+        if( wsHandler->handleWebsocketTimeout(websocketClientID) ) {
+          Serial.println("[ws] Error: websocket timed out!");
+          Serial.println("[ws] Close websocket connection ...");
+          break;
+        }        
       }
     }
   } else {
@@ -161,7 +172,7 @@ void eventListener(void* params) {
   vTaskDelete(NULL);
 }
 
-WebsocketHandler::WebsocketHandler(SHM *pSHM) : websocketConnectionStatus({false, false, false, false}) {
+WebsocketHandler::WebsocketHandler(SHM *pSHM) {
   Serial.println();
   Serial.print("[ws] Joining SHM container with status ");
   mSHM=pSHM;
@@ -178,11 +189,17 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) : websocketConnectionStatus({false
   removeClient.unlock();
   sendData.unlock();
   clientID.unlock();
+  accessFlag.unlock();
   
   clientCount = 0;
   webSocketServer = new WiFiServer(90);
 
   webSocketConnections = new WebSocketConnection*[MAXCLIENTS];
+
+  for(int i = 0; i < MAXCLIENTS; i++) {
+    setWebsocketFlag(i, true);
+    setWebsocketPingReceived(i, true);
+  }
 
   for(int i = 0; i < MAXCLIENTS; i++) {
     webSocketConnections[i] = NULL;
@@ -329,8 +346,13 @@ void WebsocketHandler::openWebSocket() {
   webSocketServer->begin();
 }
 
-void WebsocketHandler::checkForWebsocketTimeout() {
-  Serial.println("[ws] Check for websocket timeout...");
+bool WebsocketHandler::handleWebsocketTimeout(int clientID) {
+  if( wsHandler->getWebsocketFlag(clientID) == false ) {
+    if(wsHandler->getWebsocketPingReceived(clientID) == false ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void WebsocketHandler::websocketTimeoutEvent() {
@@ -338,20 +360,66 @@ void WebsocketHandler::websocketTimeoutEvent() {
 }
 
 void WebsocketHandler::websocketTimedOut() {
-  Serial.println("[ws] websocket timeout!");
-
-  // websocket connection 0
-  if(websocketConnectionStatus[0] == true) {
-    // flag = true -> ping received
-    websocketConnectionStatus[1] = true;
-    // reset flag
-    websocketConnectionStatus[0] = false;
-  } else {
-    // flag = false -> ping not received
-    websocketConnectionStatus[1] = false;
-    // reset flag
-    websocketConnectionStatus[0] = false;   
+  //Serial.println("[ws] [timer] Check for connection timeout ...");
+  
+  for(int i = 0; i < MAXCLIENTS; i++) {
+    if(webSocketConnections[i] != NULL) {
+      Serial.print("[ws-timer] Client ");
+      Serial.print(i);
+      Serial.println(":");
+      
+      Serial.print("[ws-timer] Flag: ");
+      Serial.println(wsHandler->getWebsocketFlag(i));
+      Serial.print("[ws-timer] Ping: ");
+      Serial.println(wsHandler->getWebsocketPingReceived(i));
+    
+      if(getWebsocketFlag(i) == true && getWebsocketPingReceived(i) == true) {
+        // flag = true -> ping received
+        setWebsocketPingReceived(i, true);
+        // reset flag
+        setWebsocketFlag(i, false);
+      } else if (getWebsocketFlag(i) == false && getWebsocketPingReceived(i) == true) {
+        // flag = false -> ping not received
+        setWebsocketPingReceived(i, false);
+        // reset flag
+        setWebsocketFlag(i, false);
+      } 
+    }
   }
+}
 
+void WebsocketHandler::setWebsocketFlag(int clientID, bool mStatus) {
+  accessFlag.lock();
+  
+  websocketConnectionStatus[clientID*2] = mStatus;
+  
+  accessFlag.unlock();
+}
 
+bool WebsocketHandler::getWebsocketFlag(int clientID) {
+  accessFlag.lock();
+
+  bool returnParam = websocketConnectionStatus[clientID*2];
+
+  accessFlag.unlock();
+  
+  return returnParam;
+}
+
+void WebsocketHandler::setWebsocketPingReceived(int clientID, bool mStatus) {
+  accessFlag.lock();
+  
+  websocketConnectionStatus[clientID*2 + 1] = mStatus;
+
+  accessFlag.unlock();
+}
+
+bool WebsocketHandler::getWebsocketPingReceived(int clientID) {
+  accessFlag.lock();
+  
+  bool returnParam = websocketConnectionStatus[clientID*2 + 1];
+
+  accessFlag.unlock();
+
+  return returnParam;
 }

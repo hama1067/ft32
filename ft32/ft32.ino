@@ -18,6 +18,7 @@
 #include "WebsocketHandler.h"
 #include "NetworkHandler.h"
 #include "ConfigHandler.h"
+/* **************************************************************************** */
 
 /* Neccessary queue includes */
 #include "ft_ESP32_SHM.h"
@@ -29,6 +30,7 @@
 #include "CButton.h"
 #include "DisableMotorBoard.h"
 #include "OledHandler.h"
+/* ***************************************************** */
 
 /* Write protectet area, modifing is not allowed */
 AssetHandler *nAssetHandler;
@@ -43,13 +45,13 @@ SW_queue mySW_queue;
 char * secureCipherKey = "we8ogr78owt346troga";
 /* ********************************************************************************* */
 
-/* ***********************************************/
+/* ********************************************* */
 
 /* Additional hardware specific modifications */
 CButton hmiTaster;
 Adafruit_SSD1306 display(128, 64, &Wire, 4);
 CheckMaxiExtension BoardType;
-/* ********************************************/
+/* ****************************************** */
 
 void initQueue_static(void* arg) {
     SHM *pSHM=(SHM*) arg;
