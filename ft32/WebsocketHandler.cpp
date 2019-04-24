@@ -38,6 +38,8 @@ void webSocketTask(void* params) {
       while (nClient->connected()) {
         *data = nWebSocketServer->getData();
         
+        delay(10); // Delay needed for receiving the data correctly
+        
         if (data->length() > 0) {
           int delimiterIndex = data->indexOf('/');
           *payload = data->substring(delimiterIndex + 1, data->length());
@@ -122,15 +124,15 @@ void webSocketTask(void* params) {
             wsHandler->sendWebSocketMessageToClient(nClient, "pong");   
           }
         }
-      
-        delay(10); // Delay needed for receiving the data correctly
 
         if( wsHandler->handleWebsocketTimeout(websocketClientID) ) {
           Serial.println("[ws] Error: websocket timed out!");
           Serial.println("[ws] Close websocket connection ...");
           break;
-        }        
+        }
       }
+
+      Serial.println("[ws] after while loop!");
     }
   } else {
     Serial.println("[ws] Maximum client connections reached.");
@@ -347,10 +349,11 @@ void WebsocketHandler::openWebSocket() {
 }
 
 bool WebsocketHandler::handleWebsocketTimeout(int clientID) {
-  if( wsHandler->getWebsocketFlag(clientID) == false ) {
-    if(wsHandler->getWebsocketPingReceived(clientID) == false ) {
-      return true;
-    }
+  // Serial.println("[ws] handleWebsocketTimeout");
+  
+  if( wsHandler->getWebsocketFlag(clientID) == false 
+      && wsHandler->getWebsocketPingReceived(clientID) == false ) {
+    return true;
   }
   return false;
 }
@@ -384,6 +387,10 @@ void WebsocketHandler::websocketTimedOut() {
         // reset flag
         setWebsocketFlag(i, false);
       } 
+    } else {
+      // initial state
+      setWebsocketPingReceived(i, false);
+      setWebsocketFlag(i, false);
     }
   }
 }

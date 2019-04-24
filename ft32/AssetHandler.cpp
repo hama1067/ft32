@@ -205,6 +205,8 @@ String AssetHandler::getContentType(String &filePath) {
     mContentTypeInformation = "Content-Type: application/json";
   } else if (type == "png") {
     mContentTypeInformation = "Content-Type: image/png";
+  } else if (type == "ico") {
+    mContentTypeInformation = "Content-Type: image/x-icon";
   } else {
     mContentTypeInformation = "Content-Type: text/html";
   }
