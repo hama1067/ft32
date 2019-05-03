@@ -163,10 +163,17 @@ void eventListener(void* params) {
     if(last != current) {
       Serial.println("changed");
     }
+    
     if(last != current && current == 0) {
       wsHandler->sendWebSocketMessage("stopped");
       last = false;
       current = false;
+    }
+    
+    if(last != current && current == 1) {
+      wsHandler->sendWebSocketMessage("running");
+      last = true;
+      current = true;
     }
     //delay(10);
     last = current;
