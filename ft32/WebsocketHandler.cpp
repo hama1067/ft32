@@ -314,9 +314,12 @@ int WebsocketHandler::getClientID(WiFiClient * pClient) {
   clientID.lock();
   
   for(int i = 0; i < MAXCLIENTS; i++) {
-    if(webSocketConnections[i]->pClient == pClient) {
-      clientID.unlock();
-      return i;
+    if (webSocketConnections[i] != NULL)
+    {
+      if(webSocketConnections[i]->pClient == pClient) {
+        clientID.unlock();
+        return i;
+      }
     }
   }
   
