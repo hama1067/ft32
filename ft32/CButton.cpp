@@ -33,9 +33,9 @@ void CButton::handleButton() {
 					Serial.println("");
 				} else	{
 					ptrSHM->commonStart = false;
-					ptrSHM->commonPause = true;
+					ptrSHM->commonPause = false;
 					Serial.println("");
-					Serial.println("Taster betätigt: PAUSE");
+					Serial.println("Taster betätigt: STOP");
 					Serial.println("");
 				}
 			}

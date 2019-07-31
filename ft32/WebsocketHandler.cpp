@@ -153,30 +153,22 @@ void webSocketTask(void* params) {
 
 void eventListener(void* params) {
   bool last = false;
-  bool current = false;
-
-  Serial.println("[ws] Starting event listener ...");
   
   while(1) {
-    current = ptrSHM->running;
-
-    if(last != current) {
-      Serial.println("changed");
-    }
     
-    if(last != current && current == 0) {
-      wsHandler->sendWebSocketMessage("stopped");
+    if(last == true && ptrSHM->running == false) {
+      Serial.println("[event] machine state changed to stopped.");
       last = false;
-      current = false;
+      wsHandler->sendWebSocketMessage("stopped");
     }
     
-    if(last != current && current == 1) {
-      wsHandler->sendWebSocketMessage("running");
+    if(last == false && ptrSHM->running == true) {
+      Serial.println("[event] machine state changed to running.");
       last = true;
-      current = true;
+      wsHandler->sendWebSocketMessage("running");
     }
-    //delay(10);
-    last = current;
+
+    delay(50);
   }
   vTaskDelete(NULL);
 }
@@ -215,6 +207,8 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     //connectedClients[i] = NULL;
   }
 
+  Serial.println("[ws] Starting event listener ...");
+
   xTaskCreatePinnedToCore(
     eventListener,    /* Function to implement the task */
     "",               /* Name of the task */
@@ -222,7 +216,7 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     NULL,             /* Task input parameter */
     0,                /* Priority of the task */
     NULL,             /* Task handle. */
-    1);               /* Core where the task should run */
+    0);               /* Core where the task should run */
 
   webSocketServer->begin();
 }
@@ -285,10 +279,10 @@ void WebsocketHandler::sendWebSocketMessage(String message) {
 
   for(int i = 0; i < MAXCLIENTS; i++) {
     if(webSocketConnections[i] != NULL) {
-      Serial.print("[ws] Sending msg to client ");
-      Serial.print(i);
-      Serial.print(" : ");
-      Serial.println(message);
+      Serial.println("[ws] Sending msg to client " + (String)i + " : " + message);
+      //Serial.print(i);
+      //Serial.print(" : ");
+      //Serial.println(message);
       
       webSocketConnections[i]->pWebSocketServer->sendData(message);
     }
@@ -346,7 +340,7 @@ void WebsocketHandler::handleWebSocketRequests() {
   } else {
     delete client;
   }
-  
+
   delay(10);
 }
 
@@ -388,12 +382,14 @@ void WebsocketHandler::websocketTimedOut() {
         setWebsocketPingReceived(i, true);
         // reset flag
         setWebsocketFlag(i, false);
+        
       } else if (getWebsocketFlag(i) == false && getWebsocketPingReceived(i) == true) {
         // flag = false -> ping not received
         setWebsocketPingReceived(i, false);
         // reset flag
         setWebsocketFlag(i, false);
-      } 
+        
+      }
     } else {
       // initial state
       setWebsocketPingReceived(i, false);

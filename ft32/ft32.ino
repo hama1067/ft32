@@ -42,7 +42,7 @@ SHM *ptrSHM;
 SW_queue mySW_queue;
 
 /* its highly recommended to change this key for every robot and make it NOT public! */
-char * secureCipherKey = "we8ogr78owt346troga";
+char * secureCipherKey = "dkaegfljcolfqzUF";
 /* ********************************************************************************* */
 
 /* ********************************************* */
