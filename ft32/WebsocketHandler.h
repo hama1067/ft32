@@ -18,7 +18,6 @@
 #include "Mutex.h"
 #include "ft_ESP32_SHM.h"
 #include "ConfigHandler.h"
-#include "Timer.h"
 
 class WebsocketHandler {
 public:
@@ -58,22 +57,12 @@ public:
     /*
      * 
      */
-    void openWebSocket();
-
-    /*
-     * 
-     */
     bool handleWebsocketTimeout(int clientID);
 
     /*
      * 
      */
-    static void websocketTimeoutEvent();
-
-    /*
-     * 
-     */
-    void websocketTimedOut();
+    void websocketTimedOut(int clientID);	//modified by JM, explanation see .cpp
 
     /*
      * 

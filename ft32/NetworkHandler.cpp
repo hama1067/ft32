@@ -78,7 +78,10 @@ String NetworkHandler::createUniqueAP(const char *pSsid, const char *pPassword) 
 	Serial.println(mSsid);
 	Serial.println("[nwh] IP: " + getIP());
 
-  return mSsid;
+	connectionMode = 1;
+  setSsid(pSsid);
+ 
+	return mSsid;
 }
 
 String NetworkHandler::createUniqueAP() {
@@ -142,12 +145,15 @@ bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPasswor
       Serial.println("[nwh] IP: " + getIP());
   
       returnCondition = true;
+	  connectionMode = 0;
     } else {
       WiFi.disconnect();
       returnCondition = false;
+	  connectionMode = 1;
     }
   } else {
     returnCondition = false;
+	connectionMode = 1;
     Serial.println("[nwh] Error: Ssid or password parameter empty.");   
   }
 
@@ -158,23 +164,54 @@ String NetworkHandler::getIP() {
 	return mIP;
 }
 
+void NetworkHandler::setIP(String pIP) {
+  mIP = pIP;
+}
+
+String NetworkHandler::getSsid() {
+	//String ssid = reinterpret_cast<const char*>(mSsid);
+	return mSSID;
+}
+
+void NetworkHandler::setSsid(const char *pSsid) {
+  bool breakCondition = false;
+  int indexCounter = 0;
+  String tmpSsid = "";
+  
+  while ( !breakCondition ) {
+    tmpSsid = tmpSsid + (char)pSsid[indexCounter];
+
+    if(tmpSsid[indexCounter] == '\0') {
+        breakCondition = true;
+        break;
+    }
+
+    indexCounter++;
+  }
+  mSSID = tmpSsid;
+}
+
+int NetworkHandler::getMode() {
+	return connectionMode;
+}
+
 void NetworkHandler::printNetworkInformation() {
 	byte mac[6];
 
 	Serial.println();
 
-	Serial.print("SSID: ");
+	Serial.print("[nwh] SSID: ");
 	Serial.println(mSsid);
-	Serial.print("IP Address: ");
+	Serial.print("[nwh] IP Address: ");
 	Serial.println(mIP);
 	WiFi.macAddress(mac);
-	Serial.print("Device MAC Address: ");
+	Serial.print("[nwh] Device MAC Address: ");
 	for(int i = 5; i >= 1; i--) {
 		Serial.print(mac[i], HEX);
 		Serial.print(":");
 	}
 	Serial.println(mac[0]);
-	Serial.print("Signal strength (RSSI): ");
+	Serial.print("[nwh] Signal strength (RSSI): ");
 	Serial.print(WiFi.RSSI());
 	Serial.println(" dBm");
 

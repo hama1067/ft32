@@ -76,23 +76,23 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
 			break;
 		case 'S':	//Warten
-			createPtr->time_s = stoi_ft(uebergabestr, ustrPos); //read seconds, counter on last digit
-			ustrPos++;  //counter on dot
-			checkChar(ustrPos, '.');  //check for dot, throw error if not present
-			ustrPos++;  //counter on milliseconds
+			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//read seconds, counter on last digit
+			ustrPos++;	//counter on dot
+			checkChar(ustrPos, '.');	//check for dot, throw error if not present
+			ustrPos++;	//counter on milliseconds
 			{
-  			int _tempUstrPos = ustrPos; //remember position for check of # of digits
-  			int _tempTimems = 0;  //temp save for milliseconds
-  			_tempTimems = stoi_ft(uebergabestr, ustrPos); //read milliseconds, counter on last digit
-  			if (1 >= (ustrPos - _tempTimems)) //if # of digits is only 1, assume it has to be 1/10 second (not 1/100)
-  			{
-  				_tempTimems *= 10;  //increase from 1/100 sec to 1/10 sec
-  			}
-  			while (_tempTimems >= 100)  //in case milliseconds have more than 3 digits
-  			{
-  				_tempTimems /= 10;  //shrink to exactly 2 digits (my format precious, gollum  :-) )
-  			}
-  			createPtr->val_pwm_timems_loop = _tempTimems; //store millisecs to queue
+				int _tempUstrPos = ustrPos;	//remember position for check of # of digits
+				int _tempTimems = 0;	//temp save for milliseconds
+				_tempTimems = stoi_ft(uebergabestr, ustrPos);	//read milliseconds, counter on last digit
+				if (1 >= (ustrPos - _tempTimems))	//if # of digits is only 1, assume it has to be 1/10 second (not 1/100)
+				{
+					_tempTimems *= 10;	//increase from 1/100 sec to 1/10 sec
+				}
+				while (_tempTimems >= 100)	//in case milliseconds have more than 3 digits
+				{
+					_tempTimems /= 10;	//shrink to exactly 2 digits (my format precious, gollum  :-) )
+				}
+				createPtr->val_pwm_timems_loop = _tempTimems;	//store millisecs to queue
 			}
 			break;
 		case 'I':	//If

@@ -19,16 +19,26 @@ public:
 
 	String createUniqueAP(const char *pSsid, const char *pPassword);
 
-  String createUniqueAP();
+	String createUniqueAP();
 
 	bool joinExistingNetwork(const char *pSsid, const char *pPassword);
 
 	String getIP();
+  void setIP(String pIP);
+	
+	String getSsid();
+  void setSsid(const char *pSsid);
+	
+	int getMode();
+  void setMode(String pMode);
 
 	void printNetworkInformation();
 
 private:
 	String mIP;
+  String mSSID;
+  int connectionMode;  // 0=connected to network, 1=accesspoint created
+ 
 	const char *mSsid;
 	const char *mPassword;
 };

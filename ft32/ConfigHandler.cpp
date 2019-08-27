@@ -122,12 +122,12 @@ bool ConfigHandler::cipherNetworkConfigurationFile(String *configData) {
   String cipheredConfig = cipheredSsid + "\n" + cipheredPassword;
 
   #ifdef CONFIGHANDLER_DEBUG
-    Serial.print("[cfg] configData: ");
+    /*Serial.print("[cfg] configData: ");
     Serial.println(*configData);
     Serial.print("[cfg] cipher key: ");
     Serial.println(cipher.getKey());
     Serial.println("[cfg] deciphered ssid: " + decipheredSsid);
-    Serial.println("[cfg] deciphered password: " + decipheredPassword);
+    Serial.println("[cfg] deciphered password: " + decipheredPassword);*/
     Serial.println("[cfg] ciphered ssid: " + cipheredSsid);
     Serial.println("[cfg] ciphered password: " + cipheredPassword);
     

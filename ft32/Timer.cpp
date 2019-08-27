@@ -42,8 +42,11 @@ bool Timer::getCallback() {
   return callbackEnabled;
 }
 
-void Timer::onTimer() { 
-  Timer::getInstance()->interruptServiceRoutine();
+void Timer::onTimer() {
+	Serial.println("[timer] isr startet at " + String(millis()));
+	Serial.println("[timer] isr running on core " + String(xPortGetCoreID()));
+	Timer::getInstance()->interruptServiceRoutine();
+	Serial.println("[timer] isr ended at " + String(millis()));
 }
 
 void Timer::interruptServiceRoutine() {  

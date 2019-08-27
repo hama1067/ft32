@@ -29,8 +29,8 @@ class SW_queue
 public:
 	/**
 	 *
-	 *  @param
-	 *  @return
+	 *  @param ---
+	 *  @return ---
 	*/
 	SW_queue();
 	
@@ -40,7 +40,15 @@ public:
 	 *  @return ---
 	*/
 	~SW_queue();
-	
+
+	/**	main task method, waits on flag (commonStart) and runs qWorker
+	 *	Note: method should normally never end
+	 *	
+	 *	@param pointer on shared_memory
+	 *	@return ---
+	*/
+	void startQueueTask(SHM* ptrSHM);
+
 	/** main method creates queue from SHM-data, runs program, communicates with HMI
 	 *
 	 *  @param pointer on shared-memory for "uebergabestr"
@@ -78,9 +86,9 @@ public:
 
 	/** extracts a number from a string starting at a given position 
 	 *  necessary, as string.toInt() from Arduino only supports numbers at the beginning of a string.
-	 *  Note: this method does not check for valid positions of strCounter.
-	 *		In fact it's even required that there is a non-digit key after the number...
-	 *  
+	 *  Note: this method modifies strCounter. It points onto the last digit after the extraction
+	 *  Note: the method can be used outside this class independantely as a function
+	 *	
 	 *  @param uestring - string the number will be extracted from
 	 *  @param strCounter - position of the first digit
 	 *  @return extracted number as integer
@@ -109,15 +117,19 @@ private:
 	array<CServoMotor, SERVO_QTY> mServoArray;	//Anlegen aller Servos in einen Array
 	array<DigitalAnalogIn, DAIN_QTY> mDAIn; //Anlegen aller Eingänge in einen Array
 	
-	String uebergabestr = "";
+	//SHM* mSHM;	//Pointer on Shared memory
 
-	commonElement* startPtr;  //Halbstatisches Startobjekt der Queue
-	commonElement* endPtr;  //Halbstatisches Endobjekt der Queue
+	String uebergabestr;
+
+	commonElement* startPtr;  //Pointer auf Startobjekt der Queue
+	commonElement* endPtr;  //Pointer auf Endobjekt der Queue
 	
-	bool qCreateError = false;	//Fehlerflag für Erstellung der Queue
-	int qCreateErrorID = 0;
-	bool qWorkError = false;	//Fehlerflag für fehlerhaft ablaufende Queue
-	int qWorkErrorID = 0;
+	bool qCreateError;	//Fehlerflag für Erstellung der Queue
+	int qCreateErrorID;
+	bool qWorkError;	//Fehlerflag für fehlerhaft ablaufende Queue
+	int qWorkErrorID;
+
+	unsigned int cycleTime;	//Refresh time for queue-thread while running in [ms]
 };
 
 

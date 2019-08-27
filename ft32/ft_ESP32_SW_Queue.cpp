@@ -1,5 +1,28 @@
 #include "ft_ESP32_SW_Queue.h"
 #include "CSpiffsStorage.h"
+#include "OledHandler.h"
+#include "NetworkHandler.h"
+
+extern SHM* ptrSHM;
+extern SW_queue mySW_queue;
+extern NetworkHandler nHandler;
+
+void initQueue_static(void* arg)
+{
+	SHM *pSHM = (SHM*)arg;	//casting arguments in SHM-Pointer
+
+	//Wait forever for flag (commonStart), execute queue and start waiting again
+	while (1) {
+		if (true == pSHM->commonStart) {
+			mySW_queue.SW_work(pSHM);
+		}
+		else {
+			delay(10);
+		}
+	}
+
+	vTaskDelete(NULL);
+}
 
 SW_queue::SW_queue()
 {
@@ -24,10 +47,18 @@ SW_queue::SW_queue()
   }
   Serial.println("IO-Objekte angelegt\n");
 
+  uebergabestr = "";
+
   startPtr = new commonElement;	//Anlegen des Start-Elements
   endPtr = new commonElement;	//Anlegen des End-Elements
-}
 
+  qCreateError = false;
+  qCreateErrorID = 0;
+  qWorkError = false;
+  qWorkErrorID = 0;
+
+  cycleTime = 5;
+}
 
 void SW_queue::setBoardType(bool pMaxi)
 {
@@ -57,12 +88,26 @@ SW_queue::~SW_queue()
   delete endPtr;
 }
 
+void SW_queue::startQueueTask(SHM* ptrSHM)
+{
+	xTaskCreatePinnedToCore(
+		initQueue_static,					// Function to implement the task
+		"initQueue_static", 				// Name of the task
+		4096,      						// Stack size in words
+		(void*)ptrSHM,       				// Task input parameter
+		0,          						// Priority of the task
+		NULL,       						// Task handle.
+		1);  								// Core where the task should run
+}
+
 void SW_queue::SW_work(SHM* mSHM)
 {
   mSHM->running = true;  //über SHM der HMI Bescheid geben, dass das Programm läuft
-  Serial.print("QUEUE common start ");
+  Serial.print("[Q] QUEUE common start ");
   Serial.println(mSHM->commonStart);
 
+  cOledHandler::getInstance()->printOledMessage("Loading...");
+  delay(1000);
 
   //Übernehmen des Übergabestrings aus dem SHM als Referenz
   uebergabestr = mSHM->webData.data;
@@ -119,6 +164,7 @@ void SW_queue::SW_work(SHM* mSHM)
   Serial.println("[Q] Testausgabe der Queue Ende.\n");
   
   //Abarbeiten des Programms
+  cOledHandler::getInstance()->printOledMessage("Running...");
   if (!qCreateError)	//Wenn kein Fehler beim Erstellen der Queue
   {
 	  queueWorker(mSHM);  //Uebergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
@@ -127,6 +173,14 @@ void SW_queue::SW_work(SHM* mSHM)
   //print any errors that occurred on creating the queue or on runtime
   printErrors();
 
+  //loop to get message sent, if oledHandler took mutex, printOledMessage might not get through
+  while(0 == cOledHandler::getInstance()->printOledMessage("Stopped..."))
+  {
+	  // Serial.println("[Q] tried to print");
+	  delay(1);
+  }
+  Serial.println("[Q] Oled stopped message successfull...");
+  
   //Queue löschen
   queueDelete();// startPtr, endPtr);
 
@@ -136,9 +190,28 @@ void SW_queue::SW_work(SHM* mSHM)
   qWorkError = false;  
   qWorkErrorID = 0;
 
+  for (int i = 0; i < MOTOR_QTY; i++)
+  {
+	  mSHM->motorVal[i] = 0;
+	  mSHM->lampVal[i] = 0;
+  }
+  mSHM->servoVal[0] = 0;
+  for (int i = 0; i < DAIN_QTY; i++)
+  {
+	  mSHM->digitalVal[i] = 0;
+	  mSHM->analogVal[i] = 0;
+  }
+
   mSHM->commonStart=false;
   mSHM->commonPause=false;
   mSHM->running = false;  //Über das SHM der HMI Bescheid geben, dass die Queue nicht mehr laeuft  
+  
+  //Show connection state display:
+  while (0 == cOledHandler::getInstance()->printConnectionStatus(nHandler.getIP(), nHandler.getSsid(), nHandler.getMode()))
+  {
+	  delay(1);
+  }
+
 }
 
 void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
@@ -234,6 +307,7 @@ void SW_queue::printErrors()
 		break;
 	case 9:
 		Serial.println("No data recieved");
+		break;
 	default:
 		Serial.println("Unbekannter Fehler, qCreateErrorID: " + qCreateErrorID);
 		break;

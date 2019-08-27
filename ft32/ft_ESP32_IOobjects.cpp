@@ -8,7 +8,7 @@ Autor: Johannes Marquart
 //#include <SparkFunSX1509.h>
 
 SX1509 sx1509Object;        //i2c SDA = PIN 21, SCL = PIN 22
-int initRecCalls = 0;  
+
 int PORT_M_PWM[MOTOR_QTY];// = {};//Output-Pins Motor-Drehzahl
 int PORT_L_PWM[LAMP_QTY]; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert
 int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
@@ -186,12 +186,12 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
   digitalWrite(PIN_M_INH, LOW);
   
   //Serial.begin(9600); -> sollte in der aufrufenden Instanz schon initialisiert sein
-  Serial.print("Motor ");
-  Serial.print(mMotorNr);
-  Serial.print(" dreht in Richtung ");
-  Serial.print(mRechtslauf);
-  Serial.print(" mit Drehzahl ");
-  Serial.println(mDrehzahl);
+  Serial.print("[io] Motor " + (String)mMotorNr);
+  //Serial.print(mMotorNr);
+  Serial.print(" dreht in Richtung " + (String)mRechtslauf);
+  //Serial.print(mRechtslauf);
+  Serial.print(" mit Drehzahl " + (String)mDrehzahl);
+  //Serial.println(mDrehzahl);
   
   //Berechnen der PWM-Werte
   int drehzahl_pwm;
@@ -249,12 +249,12 @@ void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
   
   digitalWrite(PIN_M_INH, HIGH);  //Einschalten Motortreiber
   
-  Serial.print("Dir: ");
-  Serial.print(mPortNrDir);
-  Serial.print(" PWM: ");
-  Serial.print(mPortNrPWM);
-  Serial.print(" Val: ");
-  Serial.println(drehzahl_pwm);
+  Serial.print("  raw: DirPin: " + (String)mPortNrDir);
+  //Serial.print(mPortNrDir);
+  Serial.print(" PWMPin: " + (String)mPortNrPWM);
+  //Serial.print(mPortNrPWM);
+  Serial.println(" Val: " + (String)drehzahl_pwm);
+  //Serial.println(drehzahl_pwm);
 }
 
 void Motor::reRun()
@@ -307,7 +307,7 @@ void CServoMotor::setValues(unsigned int dutyCycle)
 	if (!ISMAXI)
 	{
 		mRelDuty = dutyCycle < 100 ? dutyCycle : 100;	//limiting maximum value to 100(%)
-		Serial.print("Servo ");
+		Serial.print("[io] Servo ");
 		Serial.print(mMotorNr);
 		Serial.print(" auf Pos ");
 		Serial.println(mRelDuty);
@@ -411,7 +411,7 @@ void Lampe::setMaxi(bool pMaxi)
 void Lampe::setValues(unsigned int helligkeit)
 {
   mHelligkeit = helligkeit;
-  Serial.print("Lampe ");
+  Serial.print("[io] Lampe ");
   Serial.print(mLampeNr);
   Serial.print(" leuchtet mit Helligkeit ");
   Serial.println(mHelligkeit);
@@ -442,7 +442,7 @@ void Lampe::setValues(unsigned int helligkeit)
 
   digitalWrite(PIN_L_INH, HIGH);  //Einschalten Lampentreiber
   
-  Serial.print("PWM: ");
+  Serial.print("[io] PWM: ");
   Serial.print(mPortNrPWM);
   Serial.print(" Val: ");
   Serial.println(helligkeit_pwm);
@@ -480,10 +480,14 @@ void DigitalAnalogIn::setMaxi(bool pMaxi)
   if (pMaxi)
   {
     mInputPortNr = SX1509_PORT_DIO_PWMO[mInputNummer];
+	currentPinMode = INPUT_PULLUP;
+	sx1509Object.pinMode(mInputPortNr, currentPinMode);
   }
   else
   {
-    mInputPortNr = PORT_IN[mInputNummer];  
+    mInputPortNr = PORT_IN[mInputNummer];
+	currentPinMode = INPUT_PULLUP;
+	pinMode(mInputPortNr, currentPinMode);
   }
   
 }
@@ -493,13 +497,19 @@ unsigned int DigitalAnalogIn::getValueDigital()
   bool eingabe;
   if (ISMAXI)
   {
-      sx1509Object.pinMode(mInputPortNr, INPUT_PULLUP);  //Pin-Modus einrichten: Input mit Pull-Up Widerstand
+	  if (INPUT_PULLUP != currentPinMode)
+	  {
+		  sx1509Object.pinMode(mInputPortNr, INPUT_PULLUP);  //Pin-Modus einrichten: Input mit Pull-Up Widerstand
+	  }
       eingabe = !sx1509Object.digitalRead(mInputPortNr);  //Inverse Logik: Schalter gedrückt = 1 (= Port liegt auf Masse)
   }
   else
   {
 	  //ledcDetachPin(mInputPortNr);	//für den Fall, dass eine PWM auf dem Pin eingerichtet ist, wird diese vor einer Abfrage von dem Pin getrennt
-      pinMode(mInputPortNr, INPUT_PULLUP);  //Pin-Modus einrichten: Input mit Pull-Up Widerstand
+	  if (INPUT_PULLUP != currentPinMode)
+	  {
+		  pinMode(mInputPortNr, INPUT_PULLUP);  //Pin-Modus einrichten: Input mit Pull-Up Widerstand
+	  }
       eingabe = !digitalRead(mInputPortNr);  //Inverse Logik: Schalter gedrückt = 1 (= Port liegt auf Masse)
   } 
   return (unsigned int) eingabe;
@@ -511,12 +521,18 @@ unsigned int DigitalAnalogIn::getValueAnalog()
 
   if (ISMAXI)
   {
-      sx1509Object.pinMode(mInputPortNr, INPUT); //Pin-Modus einrichten: Input ohne Pull-Up Widerstand
+	  if (INPUT != currentPinMode)
+	  {
+		  sx1509Object.pinMode(mInputPortNr, INPUT); //Pin-Modus einrichten: Input ohne Pull-Up Widerstand
+	  }
       eingabe = sx1509Object.digitalRead(mInputPortNr);
   }
   else
   {
-      pinMode(mInputPortNr, INPUT); //Pin-Modus einrichten: Input ohne Pull-Up Widerstand
+	  if (INPUT != currentPinMode)
+	  {
+		  pinMode(mInputPortNr, INPUT); //Pin-Modus einrichten: Input ohne Pull-Up Widerstand
+	  }
       eingabe = analogRead(mInputPortNr);
   }
   return eingabe;
@@ -533,7 +549,7 @@ void DigitalAnalogIn::setValueDigital(bool ledLevel)
     pinMode(mInputPortNr, OUTPUT);  //Pin_Modus einrichten: Output
   }
   
-  Serial.print("Setze LED ");
+  Serial.print("[io] Setze LED ");
   Serial.print(mInputNummer);
   Serial.print(" auf ");
   if (ledLevel)

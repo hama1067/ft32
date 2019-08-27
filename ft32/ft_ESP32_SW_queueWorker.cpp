@@ -2,30 +2,39 @@
 #include "ft_ESP32_SW_Queue.h"
 //#include <Adafruit_SSD1306.h>
 //extern Adafruit_SSD1306 display;
+#include "OledHandler.h"
+#include <time.h>
 
 void SW_queue::queueWorker(SHM* mSHM)
 {	
-	Serial.println("Queue abarbeiten...");	//Debug-Ausgabe... alle Seriellen Ausgaben sind zur Pruefung des Programmablaufs in der Konsole
+	Serial.println("[QW] Queue abarbeiten...");	//Debug-Ausgabe... alle Seriellen Ausgaben sind zur Pruefung des Programmablaufs in der Konsole
 	
 	commonElement* workPtr = startPtr->nextElement;
 
-  // (workPtr != endPtr) && !mSHM->commonStopp
+	unsigned long starttime, endtime, runtime;
+	
+
 	while ((workPtr != endPtr) && mSHM->commonStart)	//wiederholen bis das letzte QE erreicht oder Stopp gedrueckt wurde
 	{
+		starttime = millis();
+		//starttime = clock() / (CLOCKS_PER_SEC / 1000);
 		int waitTime = 0;	//Variable zur Wartezeit [ms]
 
 		switch (workPtr->ID)
 		{
 		case 'M':
 			mMotorArray.at(workPtr->portNr).setValues(workPtr->compare_direction, workPtr->val_pwm_timems_loop);	//Motordaten.set, Ausgangspins werden gesetzt
+			mSHM->motorVal[workPtr->portNr] = (1 == workPtr->compare_direction ? workPtr->val_pwm_timems_loop : -workPtr->val_pwm_timems_loop);
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
 		case 'L':
 			mLampeArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Lampendaten.set -> sollte sofort ausgefuehrt werden
+			mSHM->lampVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
 		case 'N':
 			mServoArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Servo.set -> sollte sofort ausgefuehrt werden
+			mSHM->servoVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
 		case 'D':	//Handling der Digitalen Anschluesse
@@ -61,7 +70,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 		case 'S':
 			waitTime = workPtr->time_s * 1000;	//Sekunden in warten [ms] speichern
 			waitTime += workPtr->val_pwm_timems_loop * 10;	//Millisekunden in warten [ms] speichern
-			Serial.print("Warte ");
+			Serial.print("[QW] Warte ");
 			Serial.print(waitTime);
 			Serial.println(" ms");
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
@@ -69,18 +78,20 @@ void SW_queue::queueWorker(SHM* mSHM)
 		case 'I':
 			if (workPtr->type == 'D')	//Digitalen Eingang abfragen
 			{
-				Serial.print("If-Verzweigung Digital: ");
-				if ((bool)mDAIn.at(workPtr->portNr).getValueDigital() == (bool)workPtr->val_pwm_timems_loop)	//Wenn Taster gedrueckt wurde, in if reingehen
+				unsigned int logicState = mDAIn.at(workPtr->portNr).getValueDigital();
+				mSHM->digitalVal[workPtr->portNr] = (bool)logicState;
+				Serial.print("[QW] If-Verzweigung, digital Abfragen: D" + (String)workPtr->portNr + "==" + (String)workPtr->val_pwm_timems_loop + "? ");
+				if ((bool)logicState == (bool)workPtr->val_pwm_timems_loop)	//Wenn Taster gedrueckt wurde, in if reingehen
 				{
-					Serial.println(" Gehe in if rein");
+					Serial.println("true ->Betrete if-Teil");
 					workPtr = workPtr->nextElement;	//in If reingehen
 				}
 				else	//Taster wurde nicht gedrueckt, springen
 				{
-					Serial.println("Ueberspringe if");
+					Serial.println("false ->Ueberspringe if-Teil");
 					if(workPtr->jumpElement->ID == 'E')	//existiert ein Else-Pfad? (Pruefung nur fuer debugging)
 					{
-						Serial.println("Gehe in Else");
+						Serial.println("[QW] Gehe in Else");
 					}
 					workPtr = workPtr->jumpElement->nextElement;	//Else-Fall, Zeiger auf eins nach Else-/Endif-Element legen
 				}
@@ -88,55 +99,59 @@ void SW_queue::queueWorker(SHM* mSHM)
 			else	//Analogen Eingang abfragen
 			{
 				unsigned int measure_val = mDAIn.at(workPtr->portNr).getValueAnalog()/32;	//Einlesen des Analogwertes, 12Bit-Wert auf 7Bit-Wert skalieren (Beschraenkung wegen HMI)
-				Serial.print("If-Verzweigung Analog: ");
+				mSHM->analogVal[workPtr->portNr] = measure_val;
+				Serial.print("[QW] If-Verzweigung, analog Abfragen: A" + (String)workPtr->portNr + ": " + (String)measure_val);
 				switch (workPtr->compare_direction)	//Auswahl, welcher Vergleichsoperator durchgefuehrt wird
 				{
 				case '<':	//Ain < Vergleichswert
+					Serial.print("<" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val < workPtr->val_pwm_timems_loop)	//Wenn Ain < Vergleichswert, in if reingehen
 					{
-						Serial.println("Gehe in if rein");
+						Serial.println("true ->Betrete if-Teil");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain nicht < Vergleichswert
 					{
-						Serial.println("Ueberspringe if");
+						Serial.println("false ->Ueberspringe if-Teil");
 						if(workPtr->jumpElement->ID == 'E')	//existiert ein Else-Pfad? (Pruefung nur fuer debugging)
 						{
-							Serial.println("Gehe in Else");
+							Serial.println("[QW] Gehe in Else");
 						}
 						workPtr = workPtr->jumpElement->nextElement;	//Else-Fall, Zeiger auf eins nach Else-/Endif-Element legen
 						//workPtr = workPtr->jumpElement;	//Zeiger auf zugehoeriges Endif legen
 					}
 					break;
 				case '>':	//Ain > Vergleichswert
+					Serial.print(">" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val > workPtr->val_pwm_timems_loop)	//Wenn Ain > Vergleichswert, in if reingehen
 					{
-						Serial.println("Gehe in if rein");
+						Serial.println("true ->Betrete if-Teil");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain nicht > Vergleichswert
 					{
-						Serial.println("Ueberspringe if");
+						Serial.println("false ->Ueberspringe if-Teil");
 						if(workPtr->jumpElement->ID == 'E')	//existiert ein Else-Pfad? (Pruefung nur fuer debugging)
 						{
-							Serial.println("Gehe in Else");
+							Serial.println("[QW] Gehe in Else");
 						}
 						workPtr = workPtr->jumpElement->nextElement;	//Else-Fall, Zeiger auf eins nach Else-/Endif-Element legen
 						//workPtr = workPtr->jumpElement;	//Zeiger auf zugehoeriges Endif legen
 					}
 					break;
 				case '=':
+					Serial.print(">" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val == workPtr->val_pwm_timems_loop)	//Wenn Ain gleich Vergleichswert, in if reingehen
 					{
-						Serial.println("Gehe in if rein");
+						Serial.println("true ->Betrete if-Teil");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain ungleich Vergleichswert
 					{
-						Serial.println("Ueberspringe if");
+						Serial.println("false ->Ueberspringe if-Teil");
 						if(workPtr->jumpElement->ID == 'E')	//existiert ein Else-Pfad? (Pruefung nur fuer debugging)
 						{
-							Serial.println("Gehe in Else");
+							Serial.println("[QW] Gehe in Else");
 						}
 						workPtr = workPtr->jumpElement->nextElement;	//Else-Fall, Zeiger auf eins nach Else-/Endif-Element legen
 						//workPtr = workPtr->jumpElement;	//Zeiger auf zugehoeriges Endif legen
@@ -156,7 +171,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 		case 'W':
 			if (workPtr->type == 'Z')
 			{
-				Serial.print("Zaehlschleife: ");
+				Serial.print("[QW] Zaehlschleife: ");
 				if (workPtr->val_pwm_timems_loop > 0) {	//Anzahl der Durchlaeufe > 0
 					Serial.print("noch ");
 					Serial.print(workPtr->val_pwm_timems_loop);
@@ -172,57 +187,63 @@ void SW_queue::queueWorker(SHM* mSHM)
 			}
 			else if (workPtr->type == 'D')	//Digitalen Eingang abfragen
 			{
-				Serial.print("Schleife, digital Abfragen: ");
-				if ((bool)mDAIn.at(workPtr->portNr).getValueDigital() == (bool)workPtr->val_pwm_timems_loop)	//Wenn Taster gedrueckt wurde, in if reingehen
+				unsigned int logicState = mDAIn.at(workPtr->portNr).getValueDigital();
+				mSHM->digitalVal[workPtr->portNr] = (bool)logicState;
+				Serial.print("[QW] Schleife, digital Abfragen: D" + (String)workPtr->portNr + "==" + (String)workPtr->val_pwm_timems_loop + "? ");
+				if ((bool)logicState == (bool)workPtr->val_pwm_timems_loop)	//Wenn Taster gedrueckt wurde, in if reingehen
 				{
-					Serial.println("Betrete Schleife");
+					Serial.println("true ->Betrete Schleife");
 					workPtr = workPtr->nextElement;	//in While reingehen
 				}
 				else	//Taster wurde nicht gedroeckt, springen
 				{
-					Serial.println("Ueberspringe Schleife");
+					Serial.println("false ->Ueberspringe Schleife");
 					workPtr = workPtr->jumpElement->nextElement; //Zeiger auf Element nach zugehoerigem EndWhile legen
 				}
 			}
 			else	//Analogen Eingang abfragen
 			{
 				unsigned int measure_val = mDAIn.at(workPtr->portNr).getValueAnalog()/32;	//Einlesen des Analogwertes, 12Bit-Wert auf 7Bit-Wert skalieren (Beschraenkung wegen HMI)
-				Serial.print("Schleife, analog Abfragen: ");
+				mSHM->analogVal[workPtr->portNr] = measure_val;
+				Serial.print("[QW] Schleife, analog Abfragen: A" + (String)workPtr->portNr + ": " + (String)measure_val);
 				switch (workPtr->compare_direction)	//Auswahl, welcher Vergleichsoperator durchgefuehrt wird
 				{
 				case '<':	//Ain < Vergleichswert
+					Serial.print("<" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val < workPtr->val_pwm_timems_loop)	//Wenn Ain < Vergleichswert, in if reingehen
 					{
-						Serial.println("Betrete Schleife");
+						Serial.println("true ->Betrete Schleife");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain nicht < Vergleichswert
 					{
-						Serial.println("Ueberspringe Schleife");
+						Serial.println("false ->Ueberspringe Schleife");
 						workPtr = workPtr->jumpElement->nextElement;	//Zeiger auf zugehoeriges Endif legen
 					}
 					break;
 				case '>':	//Ain > Vergleichswert
+					Serial.print(">" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val > workPtr->val_pwm_timems_loop)	//Wenn Ain > Vergleichswert, in if reingehen
 					{
-						Serial.println("Betrete Schleife");
+						Serial.println("true ->Betrete Schleife");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain nicht > Vergleichswert
 					{
-						Serial.println("Ueberspringe Schleife");
+						Serial.println("false ->Ueberspringe Schleife");
 						workPtr = workPtr->jumpElement->nextElement;	//Zeiger auf zugehoeriges Endif legen
 					}
 					break;
 				case '=':
+					Serial.print("==" + (String)workPtr->val_pwm_timems_loop + "? ");
 					if (measure_val == workPtr->val_pwm_timems_loop)	//Wenn Ain gleich Vergleichswert, in if reingehen
 					{
-						Serial.println("Betrete Schleife");
+						Serial.println("true ->Betrete Schleife");
 						workPtr = workPtr->nextElement;	//in If reingehen
 					}
 					else	//Ain ungleich Vergleichswert
 					{
-						Serial.println("Ueberspringe Schleife");
+						Serial.println("false ->Ueberspringe Schleife");
 						workPtr = workPtr->jumpElement->nextElement;	//Zeiger auf zugehoeriges Endif legen
 					}
 					break;
@@ -232,7 +253,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			}
 			break;
 		case 'X':	//EndWhile
-			Serial.println("Wiederhole Schleife");
+			Serial.println("[QW] Wiederhole Schleife");
 			workPtr = workPtr->jumpElement;	//Springt zurueck zu While und dortiger Pruefung
 			break;
 		default:
@@ -240,6 +261,13 @@ void SW_queue::queueWorker(SHM* mSHM)
 		}
 		
 		//DEBUG MIT DISPLAY - Anzeige aller Eingaenge (digital und analog)
+		//cOledHandler::getInstance()->printOledMessage("T1:" + (String)mDAIn.at(0).getValueDigital());
+		cOledHandler::getInstance()->printQueueWindow(mSHM);
+		/*Serial.println("State: ");
+		for (int i = 0; i < 8; i++)
+		{
+			Serial.print("T" + (String)i + ":" + (String)mSHM->digitalVal[i]);
+		}*/
 		/*
 		for(int i = 0; i < DAIN_QTY; i++)
 		{
@@ -256,7 +284,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 		//~DEBUG MIT DISPLAY
 
 		do {
-			if (waitTime >= 0)	//wenn Wartezeit vorhanden
+			if (waitTime > 0)	//wenn Wartezeit vorhanden
 			{
 				//Serial.println("Warte 10 ms");
 				waitTime -= 10;	//Wartezeit um 10ms reduzieren
@@ -264,7 +292,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			}
 			if (mSHM->commonPause)	//Pause-Button wurde gedrueckt
 			{
-				Serial.println("Pause gestartet");
+				Serial.println("[Q_work] Pause gestartet");
 				Motor mMotorSave[MOTOR_QTY];// mMotorArray.size()];	//Sicherungsobjekte fuer Motoren anlegen
 				Lampe mLampeSave[LAMP_QTY];// mLampeArray.size()];	//Sicherungsobjekte fuer Lampen anlegen
 				for (int i = 0; i < mMotorArray.size(); i++)
@@ -278,7 +306,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 					delay(10);	//10ms warten (schohnt CPU)
 				} while (mSHM->commonPause && mSHM->commonStart);	//warten auf Aufhebung der Pause oder auf Stopp
        
-				Serial.println("Pause beendet");
+				Serial.println("[Q_work] Pause beendet");
 				//IO-Objekte auf kopierte Werte zuruecksetzen
 				for (int i = 0; i < mMotorArray.size(); i++)
 				{
@@ -288,12 +316,20 @@ void SW_queue::queueWorker(SHM* mSHM)
 					//mLampeArray[i].reRun();
 				}
 			}
-		} while (waitTime >= 0 && mSHM->commonStart);	//warten auf Ende der Pausenzeit oder auf Stopp
+		} while (waitTime > 0 && mSHM->commonStart);	//warten auf Ende der Pausenzeit oder auf Stopp
+		
+		//endtime = clock() / (CLOCKS_PER_SEC / 1000);
+		endtime = millis();
+		runtime = endtime - starttime;
+		//Serial.println("[Q_work] Endtime: " + (String)endtime + " Diff: " + (String)(runtime));
+		runtime = runtime <= cycleTime ? runtime : cycleTime;	//limit runtime to max. 10ms for delay();
+		//delay(cycleTime - runtime);	//ensures a constant cycle time for queue-thread while running
+		delay(1);
     }
 
-	Serial.println("Queue abarbeiten Ende.\n");
+	Serial.println("[Q_work] Queue abarbeiten Ende.\n");
 	
-	Serial.println("Ausgaenge zuruecksetzen...");
+	Serial.println("[Q_work] Ausgaenge zuruecksetzen...");
 	
 	for (int i = 0; i < mMotorArray.size(); i++)	//Am Ende des Programms zuruecksetzen der Ausgaenge auf 0
 	{
@@ -310,7 +346,7 @@ void SW_queue::queueWorker(SHM* mSHM)
   //mSHM->commonStopp=false;
   //mSHM->running=false;
   
-	Serial.println("Ausgaenge zurueckgesetzt.");
+	Serial.println("[Q_work] Ausgaenge zurueckgesetzt.");
 	
 	//return false;
 }

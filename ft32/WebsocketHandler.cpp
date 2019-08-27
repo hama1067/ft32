@@ -35,6 +35,8 @@ void webSocketTask(void* params) {
       wsHandler->setWebsocketFlag(websocketClientID, true);
       wsHandler->setWebsocketPingReceived(websocketClientID, true);
 
+	    int oldModulo = 0;	//Testing 5 sec intervall JM
+
       while (nClient->connected()) {
         *data = nWebSocketServer->getData();
         
@@ -130,9 +132,16 @@ void webSocketTask(void* params) {
           Serial.println("[ws] Close websocket connection ...");
           break;
         }
-      }
 
-      Serial.println("[ws] after while loop!");
+    		//Testing 5 sec intervall and start ws-timeout here JM:
+    		unsigned long currentTime = millis();
+    		if (currentTime % 5000 < oldModulo) {
+    			Serial.println("[ws] ws-connection " + (String)websocketClientID + ": 5 Seconds passed, time: " + (String)currentTime);
+    			wsHandler->websocketTimedOut(websocketClientID);
+    		}
+       
+    		oldModulo = currentTime % 5000;
+      }
     }
   } else {
     Serial.println("[ws] Maximum client connections reached.");
@@ -153,22 +162,30 @@ void webSocketTask(void* params) {
 
 void eventListener(void* params) {
   bool last = false;
+  bool current = false;
+
+  Serial.println("[ws] Starting event listener ...");
   
   while(1) {
-    
-    if(last == true && ptrSHM->running == false) {
-      Serial.println("[event] machine state changed to stopped.");
-      last = false;
-      wsHandler->sendWebSocketMessage("stopped");
-    }
-    
-    if(last == false && ptrSHM->running == true) {
-      Serial.println("[event] machine state changed to running.");
-      last = true;
-      wsHandler->sendWebSocketMessage("running");
-    }
+    current = ptrSHM->running;
 
-    delay(50);
+    if(last != current) {
+      Serial.println("[ws] changed");
+    }
+    
+    if(last != current && current == 0) {
+      wsHandler->sendWebSocketMessage("stopped");
+      last = false;
+      current = false;
+    }
+    
+    if(last != current && current == 1) {
+      wsHandler->sendWebSocketMessage("running");
+      last = true;
+      current = true;
+    }
+    //delay(10);
+    last = current;
   }
   vTaskDelete(NULL);
 }
@@ -179,13 +196,6 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
   mSHM=pSHM;
   Serial.println(mSHM->commonStart);
 
-  Timer::getInstance()->setTimeout(5);
-  Timer::getInstance()->setCallbackFunction(websocketTimeoutEvent);
-  
-  if(!Timer::getInstance()->start()) {
-    Serial.println("[timer] Can not start timer!");
-  }
-  
   addClient.unlock();
   removeClient.unlock();
   sendData.unlock();
@@ -206,8 +216,6 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
     webSocketConnections[i] = NULL;
     //connectedClients[i] = NULL;
   }
-
-  Serial.println("[ws] Starting event listener ...");
 
   xTaskCreatePinnedToCore(
     eventListener,    /* Function to implement the task */
@@ -279,10 +287,10 @@ void WebsocketHandler::sendWebSocketMessage(String message) {
 
   for(int i = 0; i < MAXCLIENTS; i++) {
     if(webSocketConnections[i] != NULL) {
-      Serial.println("[ws] Sending msg to client " + (String)i + " : " + message);
-      //Serial.print(i);
-      //Serial.print(" : ");
-      //Serial.println(message);
+      Serial.print("[ws] Sending msg to client ");
+      Serial.print(i);
+      Serial.print(" : ");
+      Serial.println(message);
       
       webSocketConnections[i]->pWebSocketServer->sendData(message);
     }
@@ -314,13 +322,15 @@ int WebsocketHandler::getClientID(WiFiClient * pClient) {
   clientID.lock();
   
   for(int i = 0; i < MAXCLIENTS; i++) {
-    if (webSocketConnections[i] != NULL)
-    {
-      if(webSocketConnections[i]->pClient == pClient) {
-        clientID.unlock();
-        return i;
-      }
-    }
+	  //Debugging for: C0 connected, C1 connected, C0 disconnected, crash
+	  //solution: check for NULLpointer before check for further pointers
+	  if (webSocketConnections[i] != NULL)
+	  {
+		  if (webSocketConnections[i]->pClient == pClient) {
+			  clientID.unlock();
+			  return i;
+		  }
+	  }
   }
   
   clientID.unlock();
@@ -339,17 +349,12 @@ void WebsocketHandler::handleWebSocketRequests() {
       (void*)client,    /* Task input parameter */
       0,                /* Priority of the task */
       NULL,             /* Task handle. */
-      1);               /* Core where the task should run */
+      0);               /* Core where the task should run */
   } else {
     delete client;
   }
-
+  
   delay(10);
-}
-
-void WebsocketHandler::openWebSocket() {
-  Serial.println("[ws] Opening websocket ports...");
-  webSocketServer->begin();
 }
 
 bool WebsocketHandler::handleWebsocketTimeout(int clientID) {
@@ -362,43 +367,37 @@ bool WebsocketHandler::handleWebsocketTimeout(int clientID) {
   return false;
 }
 
-void WebsocketHandler::websocketTimeoutEvent() {
-  wsHandler->websocketTimedOut();
-}
-
-void WebsocketHandler::websocketTimedOut() {
-  //Serial.println("[ws] [timer] Check for connection timeout ...");
+void WebsocketHandler::websocketTimedOut(int clientID) {
+	//Serial.println("[ws] [timer] Check for connection timeout ...");
+	//only check for timed out in current connection (not every connection)
+	//necessary, as now every connection checks for timeout itself, not only one timer
   
-  for(int i = 0; i < MAXCLIENTS; i++) {
-    if(webSocketConnections[i] != NULL) {
-      Serial.print("[ws-timer] Client ");
-      Serial.print(i);
-      Serial.println(":");
+	if(webSocketConnections[clientID] != NULL) {
+		Serial.print("[ws-timer] Client ");
+		Serial.print(clientID);
+		Serial.println(":");
       
-      Serial.print("[ws-timer] Flag: ");
-      Serial.println(wsHandler->getWebsocketFlag(i));
-      Serial.print("[ws-timer] Ping: ");
-      Serial.println(wsHandler->getWebsocketPingReceived(i));
+		Serial.print("[ws-timer] Flag: ");
+		Serial.println(wsHandler->getWebsocketFlag(clientID));
+		Serial.print("[ws-timer] Ping: ");
+		Serial.println(wsHandler->getWebsocketPingReceived(clientID));
     
-      if(getWebsocketFlag(i) == true && getWebsocketPingReceived(i) == true) {
-        // flag = true -> ping received
-        setWebsocketPingReceived(i, true);
-        // reset flag
-        setWebsocketFlag(i, false);
-        
-      } else if (getWebsocketFlag(i) == false && getWebsocketPingReceived(i) == true) {
-        // flag = false -> ping not received
-        setWebsocketPingReceived(i, false);
-        // reset flag
-        setWebsocketFlag(i, false);
-        
-      }
-    } else {
-      // initial state
-      setWebsocketPingReceived(i, false);
-      setWebsocketFlag(i, false);
-    }
-  }
+		if(getWebsocketFlag(clientID) == true && getWebsocketPingReceived(clientID) == true) {
+		// flag = true -> ping received
+		setWebsocketPingReceived(clientID, true);
+		// reset flag
+		setWebsocketFlag(clientID, false);
+		} else if (getWebsocketFlag(clientID) == false && getWebsocketPingReceived(clientID) == true) {
+		// flag = false -> ping not received
+		setWebsocketPingReceived(clientID, false);
+		// reset flag
+		setWebsocketFlag(clientID, false);
+		} 
+	} else {
+		// initial state
+		setWebsocketPingReceived(clientID, false);
+		setWebsocketFlag(clientID, false);
+	}
 }
 
 void WebsocketHandler::setWebsocketFlag(int clientID, bool mStatus) {

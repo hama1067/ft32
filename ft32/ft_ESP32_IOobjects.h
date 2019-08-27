@@ -186,6 +186,7 @@ public:
 private:
 	unsigned int mInputNummer;
 	unsigned int mInputPortNr;
+	unsigned char currentPinMode;
 };
 
 

@@ -44,7 +44,7 @@ void Mutex::lock()
 
     while(1)
     {
-        while (m_count == 0) { };
+		while (m_count == 0) { delay(1); };
 
         prev = _interlockedExchange(0);
 

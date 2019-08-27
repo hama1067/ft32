@@ -8,7 +8,6 @@
  */
    
 #include "OledHandler.h"
-   
 
 #define LOGO16_GLCD_HEIGHT 16 
 #define LOGO16_GLCD_WIDTH  16 
@@ -32,173 +31,215 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] = {
   B00000000, B00110000 
 };
 
-void InitOled(Adafruit_SSD1306 &display) {      
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE); 
-  // display.setCursor(0,0);
-  // display.println("HsKA     Fischertechnik HWG!");
-  // display.display();
-};
- 
-void printVerbindungsaufbau(Adafruit_SSD1306 &display) {
-  // display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-  Serial.println("Display Ausgabe Verbinden.............................");
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  
-  display.setCursor(0,0);
-  display.println("Verbindungsaufbau...");
-  display.display();
+cOledHandler* cOledHandler::instance = 0;	/* statische Elemente einer Klasse m�ssen initialisiert werden. - Singleton voodoo*/
+
+cOledHandler::cOledHandler()//:display(Adafruit_SSD1306(128,64))
+{
+	mOledPreBufferPtr = new oledPreBuffer{ false, false, DT_Empty, "", "", "", "", 0, NULL };
+	
+	xTaskCreatePinnedToCore
+	(
+		printDisplay,				// Function to implement the task
+		"initQueue_static",			// Name of the task
+		10000,						// Stack size in words
+		(void*)mOledPreBufferPtr,	// Task input parameter
+		0,							// Priority of the task
+		NULL,						// Task handle.
+		0							// Core where the task should run
+	);
 }
 
-void printVerbunden(Adafruit_SSD1306 &display) {
-  Serial.println("Display Ausgabe Verbunden............................");
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  
-  display.setCursor(0,8);
-  display.println("verbunden");
-  display.display();
-  delay(2000);
+cOledHandler::~cOledHandler()
+{
+	//delete display;
 }
 
-void printLoginData(Adafruit_SSD1306 &display, String pIP, String pPasswort, String pssid) {
-  
-  unsigned int i=0;
-
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  
-  display.setCursor(0,i);
-  display.println("IP-Adresse");
-  
-  display.setCursor(0,i+8);
-  display.println(pIP);
-  
-  display.setCursor(0,i+16);
-  display.println("Passwort:");
-  
-  display.setCursor(0,i+24);
-  display.println(pPasswort);
-  
-  display.setCursor(0,i+32);
-  display.println("SSID:");
-  
-  display.setCursor(0,i+40);
-  display.println(pssid);
-  
-  //display.setCursor(0,32);
-  //display.println("Zeile: 5");
-  //display.setCursor(0,40);
-  //display.println("Zeile: 6");
-  //display.setCursor(64,48);
-  //display.println(i);
-  //display.setCursor(0,56);
-  //display.println("Zeile: 8");
-  
-  display.display();
-  //display.clearDisplay();
-   
+cOledHandler* cOledHandler::getInstance()
+{
+	if (!instance)
+		instance = new cOledHandler();
+	return instance;
 }
 
-void printConnectionStatus(Adafruit_SSD1306 &display, String pIP, String pSsid, int mode) {
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  
-  display.setCursor(0,0);
+void cOledHandler::printDisplay(void * arg)
+{
+	oledPreBuffer* mOledPreBufferPtr = (oledPreBuffer*)arg;
+	//Setup of display
+	Adafruit_SSD1306 display_intern(128, 64);
+	display_intern.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+	display_intern.clearDisplay();
 
-  if( mode == 0 ) {
-    display.println("Connected to network");
-  } else {
-    display.println("Access point created");
-  }
+	unsigned long starttime, endtime, runtime;
 
-  display.println("--------------------");
-  display.println("Network name:");
-  display.println(pSsid);
-  display.println();
-  display.println("FT32 IP address:");
-  display.println(pIP);
-  display.println("--------------------");
-  
-  display.display();
+	while (true)
+	{
+		starttime = millis();
+		if (false == mOledPreBufferPtr->bufMutexLocked)	//check if mutex is not taken, else skip
+		{
+			mOledPreBufferPtr->bufMutexLocked = true;	//take mutex - writing to buffer is blocked
+			if (mOledPreBufferPtr->bufNewScreen)	//check if anything to display, else skip
+			{
+				display_intern.clearDisplay();
+				display_intern.setTextSize(1);
+				display_intern.setTextColor(WHITE);
+				display_intern.setCursor(0, 0);
+
+				/* Switch between differen Display types, e.g.:
+				simple message, connectionState (ak main screen), QueueState, etc.
+				Print display accordingly
+				*/
+				switch (mOledPreBufferPtr->mDisplayType)
+				{
+				case DT_Message:	//simple text message, printed on top of display
+					display_intern.println(mOledPreBufferPtr->bufMessage);
+					break;
+				case DT_ConState:	//network information
+					if (0 == mOledPreBufferPtr->bufMode)
+					{
+						display_intern.println("Connected to network");
+					}
+					else {
+						display_intern.println("Access point created");
+					}
+
+					display_intern.println("--------------------");
+					display_intern.println("Network name:");
+					display_intern.println(mOledPreBufferPtr->bufnetworkName);
+					display_intern.println();
+					display_intern.println("FT32 IP address:");
+					display_intern.println(mOledPreBufferPtr->bufIPaddress);
+					display_intern.println("--------------------");
+					break;
+				case DT_ConStatePW:	//network information with password (only recomended, if accesspoint created)
+					if (0 == mOledPreBufferPtr->bufMode)
+					{
+						display_intern.println("Connected to network");
+					}
+					else {
+						display_intern.println("Access point created");
+					}
+
+					display_intern.println("--------------------");
+					display_intern.println("Network name:");
+					display_intern.println(mOledPreBufferPtr->bufnetworkName);
+					display_intern.println("PW:" + mOledPreBufferPtr->bufPassword);
+					display_intern.println("FT32 IP address:");
+					display_intern.println(mOledPreBufferPtr->bufIPaddress);
+					display_intern.println("--------------------");
+					break;
+				case DT_QueState:	//print run-time-informations on running program
+					
+					for (int i = 0; i < 8; i++)	//print digital ButtonStates
+					{
+						display_intern.setCursor((i * 15 + 1), 1);
+						if ((bool)mOledPreBufferPtr->bufSHMptr->digitalVal[i])
+						{
+							display_intern.fillRect(i * 15, 0, 13, 9, WHITE);
+							display_intern.setTextColor(BLACK);
+						}
+						else
+						{
+							display_intern.setTextColor(WHITE);
+						}
+						display_intern.print("T" + (String)i);// + (String)((bool)mSHMptr->digitalVal[i]));
+						display_intern.setCursor((i * 15 + 1), 9);
+						display_intern.setTextColor(WHITE);
+						display_intern.print(mOledPreBufferPtr->bufSHMptr->analogVal[i]/2);
+					}
+
+					for (int i = 0; i < 4; i++)	//print motor values
+					{
+						display_intern.setCursor((i * 30 + 1), 17);
+						display_intern.print("M" + (String)i + ":" + (String)mOledPreBufferPtr->bufSHMptr->motorVal[i]);
+					}
+
+					display_intern.setCursor(1, 25);	//print servo values
+					display_intern.print("S" + (String)0 + ":" + (String)mOledPreBufferPtr->bufSHMptr->servoVal[0]);
+				default:
+					break;
+				}
+
+				display_intern.display();
+				mOledPreBufferPtr->mDisplayType = DT_Empty;
+				mOledPreBufferPtr->bufNewScreen = false;
+			}
+			mOledPreBufferPtr->bufMutexLocked = false;
+		}
+		
+		endtime = millis();
+		runtime = endtime - starttime;
+		//Serial.println("[oled_main] Endtime: " + (String)endtime + " Diff: " + (String)(runtime));
+		runtime = runtime < 199 ? runtime : 198;	//limit runtime to max. 200ms for delay();
+		delay(199 - runtime);	//ensures a ~5Hz refresh rate for display
+	}
+
+	vTaskDelete(NULL);
 }
 
-void printOledMessage(Adafruit_SSD1306 &display, String message) {
-  int indexOffset = 0;
-  
-  Serial.print("[oled] new message: ");
-  
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  
-  for(int i=1; i <= message.length(); i++) {
-    if(message[i-1] == '\n') {
-       display.println();
-       Serial.print(" ");
-       indexOffset = (i-1);
-    } else {
-       display.print(message[i-1]);
-       Serial.print(message[i-1]);
-
-      if ((i-indexOffset)%21 == 0) {
-        display.println();
-        Serial.print(" ");
-      }
-    }
-  }
-  
-  display.display();
-  Serial.println();
+int cOledHandler::printLoginData(String pIP, String pPasswort, String pSsid, int mode) {//Adafruit_SSD1306 &display, String pIP, String pPasswort, String pssid) {
+	if (!mOledPreBufferPtr->bufMutexLocked)
+	{
+		mOledPreBufferPtr->bufMutexLocked = true;
+		mOledPreBufferPtr->mDisplayType = DT_ConStatePW;
+		mOledPreBufferPtr->bufIPaddress = pIP;
+		mOledPreBufferPtr->bufPassword = pPasswort;
+		mOledPreBufferPtr->bufnetworkName = pSsid;
+		mOledPreBufferPtr->bufMode = mode;
+		mOledPreBufferPtr->bufNewScreen = true;
+		mOledPreBufferPtr->bufMutexLocked = false;
+		
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
-/* void printScreensave(Adafruit_SSD1306 display){};
+int cOledHandler::printConnectionStatus(String pIP, String pSsid, int mode){//Adafruit_SSD1306 &display, String pIP, String pSsid, int mode) {
+	if (!mOledPreBufferPtr->bufMutexLocked)
+	{
+		mOledPreBufferPtr->bufMutexLocked = true;
+		mOledPreBufferPtr->mDisplayType = DT_ConState;
+		mOledPreBufferPtr->bufIPaddress = pIP;
+		mOledPreBufferPtr->bufnetworkName = pSsid;
+		mOledPreBufferPtr->bufMode = mode;
+		mOledPreBufferPtr->bufNewScreen = true;
+		mOledPreBufferPtr->bufMutexLocked = false;
 
-
-void testdrawbitmap(const uint8_t *bitmap, uint8_t w, uint8_t h) {
-  uint8_t icons[NUMFLAKES][3];
- 
-  // initialize
-  for (uint8_t f=0; f< NUMFLAKES; f++) {
-    icons[f][XPOS] = random(display.width());
-    icons[f][YPOS] = 0;
-    icons[f][DELTAY] = random(5) + 1;
-    
-    Serial.print("x: ");
-    Serial.print(icons[f][XPOS], DEC);
-    Serial.print(" y: ");
-    Serial.print(icons[f][YPOS], DEC);
-    Serial.print(" dy: ");
-    Serial.println(icons[f][DELTAY], DEC);
-  }
-
-  while (1) {
-    // draw each icon
-    for (uint8_t f=0; f< NUMFLAKES; f++) {
-      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], bitmap, w, h, WHITE);
-    }
-    display.display();
-    delay(200);
-    
-    // then erase it + move it
-    for (uint8_t f=0; f< NUMFLAKES; f++) {
-      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], bitmap, w, h, BLACK);
-      // move it
-      icons[f][YPOS] += icons[f][DELTAY];
-      // if its gone, reinit
-      if (icons[f][YPOS] > display.height()) {
-        icons[f][XPOS] = random(display.width());
-        icons[f][YPOS] = 0;
-        icons[f][DELTAY] = random(5) + 1;
-      }
-    }
-   }
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
-*/
+
+int cOledHandler::printOledMessage(String message) {//Adafruit_SSD1306 &display, String message) {
+	if (!mOledPreBufferPtr->bufMutexLocked)
+	{
+		mOledPreBufferPtr->bufMutexLocked = true;
+		mOledPreBufferPtr->mDisplayType = DT_Message;
+		mOledPreBufferPtr->bufMessage = message;
+		mOledPreBufferPtr->bufNewScreen = true;
+		mOledPreBufferPtr->bufMutexLocked = false;
+
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void cOledHandler::printQueueWindow(void* shm_ptr)
+{
+	if (!mOledPreBufferPtr->bufMutexLocked)
+	{
+		mOledPreBufferPtr->bufMutexLocked = true;
+		mOledPreBufferPtr->mDisplayType = DT_QueState;
+		mOledPreBufferPtr->bufSHMptr = (SHM*)shm_ptr;
+		mOledPreBufferPtr->bufNewScreen = true;
+		mOledPreBufferPtr->bufMutexLocked = false;
+	}
+}

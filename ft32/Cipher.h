@@ -12,8 +12,6 @@
 #include <Arduino.h>
 //#include <WString.h>
 
-#define CIPHER_DEBUG
-
 class Cipher {
 public:
   /** Default constructor, privateChiperKey property will be set on a default, unsecure value
