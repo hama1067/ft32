@@ -13,6 +13,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+//libraries for BNO055
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+
 #include "ft_ESP32_SHM.h"
 
 #define NUMFLAKES 10

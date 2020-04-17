@@ -18,7 +18,7 @@ struct commonElement
 	commonElement* jumpElement = NULL;	//zeigt bei: If -> Else+1/EndIf+1, Else -> EndIf+1, While -> EndWhile+1, EndWhile -> While
 	unsigned char type = 0;	//Art des Inputs "A"/"D" bei If und (normalem) While, "Z" bei Zaehlschleifen
 	unsigned char portNr = 0;	//0..7 bei Input (auch in If/While), 0..3 bei Aktor
-	unsigned char compare_direction = 0;	//Vergleichsoperator bei If/While, Richtung Motor
+	unsigned char compare_direction = 0;	//Vergleichsoperator bei If/While, Richtung(0/1) Motor, Bremsen(2)
 	unsigned int val_pwm_timems_loop = 0;	//Vgl-Wert If/While, PWM Motor/Lampe, Wartezeit [ms], Wert Zaehlschleife
 	unsigned int time_s = 0;	//Zeitwert in Sekunden (nur von Wartezeit benutzt)
 	unsigned short rootID = 0;	//fortlaufende ID fuer If/While (um die EndIf und EndWhile korrekt zuordnen zu koennen)

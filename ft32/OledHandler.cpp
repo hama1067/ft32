@@ -39,13 +39,13 @@ cOledHandler::cOledHandler()//:display(Adafruit_SSD1306(128,64))
 	
 	xTaskCreatePinnedToCore
 	(
-		printDisplay,				// Function to implement the task
-		"initQueue_static",			// Name of the task
-		10000,						// Stack size in words
+		printDisplay,				      // Function to implement the task
+		"oled_task",			        // Name of the task
+		10000,						        // Stack size in words
 		(void*)mOledPreBufferPtr,	// Task input parameter
-		0,							// Priority of the task
-		NULL,						// Task handle.
-		0							// Core where the task should run
+		0,							          // Priority of the task
+		NULL,						          // Task handle.
+		0							            // Core where the task should run
 	);
 }
 
@@ -69,7 +69,18 @@ void cOledHandler::printDisplay(void * arg)
 	display_intern.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 	display_intern.clearDisplay();
 
+  //Setup of bno055 sensor
+  Adafruit_BNO055 bno = Adafruit_BNO055(55);
+  sensors_event_t event;
+  
+  if(!bno.begin()) {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.println("[oled] no BNO055 detected! Check your wiring or I2C ADDR!");
+  }
+
 	unsigned long starttime, endtime, runtime;
+  float angleTolerance = 5.0;
+  String orientation = "";
 
 	while (true)
 	{
@@ -105,7 +116,7 @@ void cOledHandler::printDisplay(void * arg)
 					display_intern.println("--------------------");
 					display_intern.println("Network name:");
 					display_intern.println(mOledPreBufferPtr->bufnetworkName);
-					display_intern.println();
+					//display_intern.println();
 					display_intern.println("FT32 IP address:");
 					display_intern.println(mOledPreBufferPtr->bufIPaddress);
 					display_intern.println("--------------------");
@@ -155,6 +166,27 @@ void cOledHandler::printDisplay(void * arg)
 
 					display_intern.setCursor(1, 25);	//print servo values
 					display_intern.print("S" + (String)0 + ":" + (String)mOledPreBufferPtr->bufSHMptr->servoVal[0]);
+          
+          display_intern.setCursor(1, 35);  //print BNO value
+          bno.getEvent(&event);             //get the angle values
+          display_intern.println();
+          display_intern.print("angle: ");
+          display_intern.print(event.orientation.x);
+
+          display_intern.println();
+          display_intern.print("orientation: ");
+
+          if( abs(event.orientation.x) > (360.f-angleTolerance) || abs(event.orientation.x) < (0.f+angleTolerance) ) {
+             orientation = "N";
+          }else if( abs(event.orientation.x) > (90.f-angleTolerance) || abs(event.orientation.x) < (90.f+angleTolerance) ) {
+             orientation = "O";
+          }else if( abs(event.orientation.x) > (180.f-angleTolerance) || abs(event.orientation.x) < (180.f+angleTolerance) ) {
+             orientation = "S";
+          }else if( abs(event.orientation.x) > (270.f-angleTolerance) || abs(event.orientation.x) < (270.f+angleTolerance) ) {
+             orientation = "W";
+          }
+
+          display_intern.print(orientation);
 				default:
 					break;
 				}

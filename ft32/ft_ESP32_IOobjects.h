@@ -12,6 +12,9 @@ Hinweis: MaxiBoard kann keine Analogdaten lesen
 
 #include <Arduino.h>
 #include <SparkFunSX1509.h>
+
+#include <analogWrite.h>
+
 //#include <SX1509_IO_Expander/src/SparkFunSX1509.h>
 
 //Festlegen Anzahl Ports
@@ -30,6 +33,8 @@ extern int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
 const int PORT_M_DIR[MOTOR_QTY] = { 16, 2, 16, 2};	//Output-Pins Motor-Richtung     !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
 const int PORT_M_ENCODER[MOTOR_QTY] = { 32, 33, 25, 26};	//InputPins Motor Encoder      MOMENTAN NICHT VERWENDET
 
+const int PORT_M_0[2] = {17,16};         //Motor 0, AIN1=17, AIN2=16
+const int PORT_M_1[2] = {2,4};         //Motor 1, AIN1=4, AIN2=2
 
 const int MINI_PORT_M_PWM[MOTOR_QTY] = { 17, 4, 17, 4 };  //Output-Pins Motor-Drehzahl     !! NUR 16 und 2 sind Verbunden, Rest ist Dummy
 const int MINI_PORT_L_PWM[LAMP_QTY] = { 17, 4, 17, 4 }; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert!! NUR 16 und 2 sind Verbunden, Rest ist Dummy
@@ -101,13 +106,13 @@ public:
 	Motor(unsigned int motorNr);	//Konstruktor, Motor-Nr (0..3), weist zu: Pin-Nr für PWM, Pin-Nr für Richtung
 	//Destructor is missing -> detach PWM-Generator from pin!
 	
-	/** sets new motor-values (direction, speed)
+	/** sets new motor-values (mode, speed)
 	 *
-	 *  @param direction (bool) eg. left-true right-false
+	 *  @param direction mode (char) eg. 2-brake right-1 left-0
 	 *  @param speed (unsigned int) qualitative value -8..0..8 manipulates internal pwm-signal
 	 *  @return ---
 	*/
-	void setValues(bool, unsigned int);	//neue Motorwerte setzen (Richtung, Drehzahl)
+	void setValues(unsigned char, unsigned int);	//neue Motorwerte setzen (Richtung, Drehzahl)
 	
 	/** sets pins and pwm value with attributes
 	 *
@@ -127,7 +132,7 @@ private:
 	unsigned int mMotorNr;	//Motornummer 0..3, wird bei Erstellung des Objekts angelegt
 	unsigned int mPortNrPWM;	//Portnummer für PWM, wird bei Erstellung des Objekts zugewiesen
 	unsigned int mPortNrDir;	//PortNr für Richtung, wird bei Erstellung des Objekts zugewiesen
-	bool mRechtslauf;	//Drehrichtung: rechts = ture, links = false
+	unsigned char mDirectionMode;	//Drehrichtung: rechts = 1, links = 0, bremsen=2
 	unsigned int mDrehzahl;	//aktuelle Geschwindigkeit (von 0 bis 8)
 	//unsigned int mLedcChannel;	//PWM-Kanal (0..15(max))
 

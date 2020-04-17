@@ -2,10 +2,10 @@
  * ft32.ino
  *
  *  Created on: Mar 04, 2019
- *      modified on: Aug 27, 2019
+ *      modified on: Apr 17, 2020
  *      Author: joseph
- *      version: v1.2 beta
- *      current stable release: v1.0.1 (1.1)
+ *      version: v1.2.1 alpha
+ *      current stable release: v1.2 beta (1.2)
  *  
  *  description:
  *  
@@ -15,7 +15,20 @@
  */
  
 /* **************************************************************************** */
-#define RELEASE_VERSION 1.2
+/*  
+ *  set the current version number; should be equal to the current stable release
+ *  number from github or above if its not a test version. 
+ */
+#define RELEASE_VERSION "1.2.1"
+
+/*  
+ *   specify the type of roboter we want to use
+ *     -> 0: FT32 Fischertechnik roboter with A4990 motor driver
+ *           (https://www.pololu.com/file/0J710/A4990-Datasheet.pdf)
+ *     -> 1: eMalRob with DRV8833 dual motor driver
+ *           (http://www.ti.com/lit/ds/symlink/drv8833.pdf)
+ */
+#define ROBOTER_VERSION 1
 /* **************************************************************************** */
 
 /* Neccessary asset, websocket, config and network connection handling includes */
@@ -138,6 +151,7 @@ void setup() {
 	  mySW_queue.startQueueTask(ptrSHM);
     Serial.println("[main] => System is up and running.");
     Serial.println("[main] release version: r-" + String(RELEASE_VERSION));
+    Serial.println("[main] selected roboter model: " + String(ROBOTER_VERSION == 0 ? "FT32": "eMalRob"));
 }
 
 void loop() {

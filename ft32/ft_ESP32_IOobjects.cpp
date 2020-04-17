@@ -45,6 +45,8 @@ CheckMaxiExtension::CheckMaxiExtension(byte address)
 }
 
 
+
+
 bool CheckMaxiExtension::CheckMaxi()
 {
 	delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
@@ -95,6 +97,7 @@ bool CheckMaxiExtension::CheckMaxi()
 	}
 }
 
+
 Motor::Motor()
 {
 	//Abschalten des Motortreibers, welcher von diesem Objekt versorgt wird.
@@ -105,7 +108,7 @@ Motor::Motor()
 	mMotorNr = 0;
 	mPortNrPWM = 0;
 	mPortNrDir = 0;
-	mRechtslauf = true;
+	mDirectionMode = 1;
 	mDrehzahl = 0;
 }
 
@@ -118,18 +121,19 @@ Motor::Motor(unsigned int motorNr)
   
 	//Initialisieren des Motorobjektes
 	mMotorNr = motorNr;
-	mRechtslauf = true;
+	mDirectionMode = 1;
 	mDrehzahl = 0;
 
-//  if (ISMAXI)
-//  {
-//    mPortNrDir = SX1509_PORT_M_DIR[mMotorNr];
-//  }
-//  else
-//  {
-//    mPortNrDir = PORT_M_DIR[mMotorNr];
-//  }
-
+/*
+  if (ISMAXI)
+  {
+    mPortNrDir = SX1509_PORT_M_DIR[mMotorNr];
+  }
+  else
+  {
+    mPortNrDir = PORT_M_DIR[mMotorNr];
+  }
+*/
 //  mPortNrPWM = PORT_M_PWM[mMotorNr];
 //    //Zuweisen PWM-Generator zu Pin. Generator 0,2,4,6 für Drehzahl
 //  ledcAttachPin(mPortNrPWM, mMotorNr*2);  //Pin-Nr für Drehzahl, PWM-Generator Nr
@@ -176,84 +180,75 @@ void Motor::setMaxi(bool pMaxi)
 		ledcWrite((mMotorNr*2)+1, 255);  //frühzeitiges Definieren des Dir-Pins
 	}
 }
- 
 
-void Motor::setValues(bool rechtslauf, unsigned int drehzahl)
+
+void Motor::setValues(unsigned char directionMode, unsigned int drehzahl)
 {
-  mRechtslauf = rechtslauf;
+  mDirectionMode = directionMode;
   mDrehzahl = drehzahl;
 
   digitalWrite(PIN_M_INH, LOW);
   
-  //Serial.begin(9600); -> sollte in der aufrufenden Instanz schon initialisiert sein
   Serial.print("[io] Motor " + (String)mMotorNr);
-  //Serial.print(mMotorNr);
-  Serial.print(" dreht in Richtung " + (String)mRechtslauf);
-  //Serial.print(mRechtslauf);
+  Serial.print(" dreht in Richtung " + (String)mDirectionMode);
   Serial.print(" mit Drehzahl " + (String)mDrehzahl);
-  //Serial.println(mDrehzahl);
-  
+
   //Berechnen der PWM-Werte
   int drehzahl_pwm;
-  if (mDrehzahl < 1)
-  {
-    drehzahl_pwm = 0;
-  }
-  else if (mDrehzahl >7)
-  {
+  if (mDrehzahl < 1) {
+    drehzahl_pwm = 0;                         //170
+  } else if (mDrehzahl >7) {
     drehzahl_pwm = 255;
-  }
-  else
-  {
-    drehzahl_pwm = mDrehzahl * 256 / 8;
+  } else {
+    drehzahl_pwm = 170 + mDrehzahl * 85 / 8;         //170+mDrehzahl*85/8
   }
 
   //Zuweisen der Richtung an den richtigen Pin entsprechend der Motornr.
-  if (mRechtslauf)
-  {
+  // mDirectionMode == 1 -> right
+  if (mDirectionMode == 1) {
     //digitalWrite(mPortNrDir, HIGH);
-    if (ISMAXI)
-    {
+    if (ISMAXI) {
       sx1509Object.digitalWrite(mPortNrDir, 1);  //Richtungspin wird auf HIGH - Rechtslauf gesetzt
     }
-    else
-    {
-      ledcWrite(mMotorNr*2+1, 255); //Generator für Richtung wird auf max. (255) gesetzt
-    }
-  }
-  else
-  {
+
+    if(mMotorNr==0 || mMotorNr==2) {
+      analogWrite(PORT_M_0[1],0);
+      analogWrite(PORT_M_0[0],drehzahl_pwm);
+    } else if (mMotorNr==1 || mMotorNr==3) {
+      analogWrite(PORT_M_1[1],0);
+      analogWrite(PORT_M_1[0],drehzahl_pwm);
+    }   
+  } else if (mDirectionMode == 0) {
     //digitalWrite(mPortNrDir, LOW);
-    if (ISMAXI)
-    {
+    if (ISMAXI) {
       sx1509Object.digitalWrite(mPortNrDir, 0);  //Richtungspin wird auf LOW - Linkslauf gesetzt
     }
-    else
-    {
-      ledcWrite(mMotorNr*2+1, 0); //Generator für Richtung wird auf 0 gesetzt
-    }
-    //!!! Unbedingt im Datenblatt des Motortreibers nachsehen, wie PWM und Richtung zusammenhängen !!!
-   
-    drehzahl_pwm = 255 - drehzahl_pwm;  //wenn der Motor rückwärts läuft, ist die PWM invertiert (255 = min, 0 = max)
-  }
 
-  //Zuweisen des PWM-Werts an den richtigen Generator entsprechend der Motornr.
-  if (ISMAXI)
-  {
-    ledcWrite(mMotorNr, drehzahl_pwm);
-  }
-  else
-  {
-    ledcWrite(mMotorNr*2, drehzahl_pwm);
+    if (mMotorNr==0 ||mMotorNr==2) {
+      analogWrite(PORT_M_0[0],0);
+      analogWrite(PORT_M_0[1],drehzahl_pwm);
+    } else if (mMotorNr==1 || mMotorNr==3) {
+      analogWrite(PORT_M_1[0],0);
+      analogWrite(PORT_M_1[1],drehzahl_pwm);
+    }
+  } else {
+    digitalWrite(PIN_M_INH, HIGH);  //Einschalten Motortreiber
+    
+    if(mMotorNr==0 || mMotorNr==2) {
+      analogWrite(PORT_M_0[1], -1);  
+      analogWrite(PORT_M_0[0], -1);
+    } else if (mMotorNr==1 || mMotorNr==3) {
+      analogWrite(PORT_M_1[1], -1);  
+      analogWrite(PORT_M_1[0], -1);   
+    }
   }
   
   digitalWrite(PIN_M_INH, HIGH);  //Einschalten Motortreiber
-  
-  Serial.print("  raw: DirPin: " + (String)mPortNrDir);
+  //Serial.print("  raw: DirPin: " + (String)mPortNrDir);
   //Serial.print(mPortNrDir);
-  Serial.print(" PWMPin: " + (String)mPortNrPWM);
+  //Serial.print(" PWMPin: " + (String)mPortNrPWM);
   //Serial.print(mPortNrPWM);
-  Serial.println(" Val: " + (String)drehzahl_pwm);
+  //Serial.println(" Val: " + (String)drehzahl_pwm);
   //Serial.println(drehzahl_pwm);
 }
 
@@ -261,7 +256,7 @@ void Motor::reRun()
 {
   if(mDrehzahl > 0)
   {
-    setValues(mRechtslauf, mDrehzahl);
+    setValues(mDirectionMode, mDrehzahl);
   }
 }
 
@@ -276,13 +271,18 @@ CServoMotor::CServoMotor()
 
 CServoMotor::CServoMotor(unsigned int motorNr, unsigned int dutyCycle)
 {
+  mPortNrPWM = 13;
 	//init of servomotor-object
 	mMotorNr = motorNr;
 	//mPinNrPWM = PIN_M_PWM[motorNr];
-	mMinDuty = 4;	//minimal real DutyCycle in %
-	mMaxDuty = 11;	//maximal real DutyCycle in %
+	mMinDuty = 11;	//minimal real DutyCycle in %
+	mMaxDuty = 4;	//maximal real DutyCycle in %
 	mRelDuty = dutyCycle < 100 ? dutyCycle : 100;	//limiting maximum value to 100(%)
-	mLedcChannel = 4;	//channel 4 - servo only used at mini-board -> only channels 0..3 are used by motors
+	//mLedcChannel = 4;	//channel 4 - servo only used at mini-board -> only channels 0..3 are used by motors
+  mLedcChannel=10;
+  ledcAttachPin(mPortNrPWM, mLedcChannel);  //Pin-Nr für Drehzahl, PWM-Generator Nr
+  ledcSetup(mLedcChannel, 50, 12);  //PWM-Generator Nr, 50 Hz PWM, 12-bit resolution (0..255)
+  
 }
 
 void CServoMotor::setMaxi(bool pMaxi)
@@ -302,6 +302,7 @@ void CServoMotor::setMaxi(bool pMaxi)
 	}
 }
 
+
 void CServoMotor::setValues(unsigned int dutyCycle)
 {
 	if (!ISMAXI)
@@ -311,6 +312,8 @@ void CServoMotor::setValues(unsigned int dutyCycle)
 		Serial.print(mMotorNr);
 		Serial.print(" auf Pos ");
 		Serial.println(mRelDuty);
+    
+    //analogWrite(mPortNrPWM, (4095 * (100 * mMinDuty + (mMaxDuty - mMinDuty) * mRelDuty)) / 10000);
 		ledcWrite(mLedcChannel, (4095 * (100 * mMinDuty + (mMaxDuty - mMinDuty) * mRelDuty)) / 10000);	//calculate real duty-cycle for servos: 0%rel = 4%, 100%rel = 11%
 	}
 }
@@ -319,6 +322,7 @@ void CServoMotor::reRun()
 {
 	if (!ISMAXI)
 	{
+    //analogWrite(mPortNrPWM, (4095 * (100 * mMinDuty + (mMaxDuty - mMinDuty) * mRelDuty)) / 10000);
 		ledcWrite(mLedcChannel, (4095 * (100 * mMinDuty + (mMaxDuty - mMinDuty) * mRelDuty)) / 10000);
 	}
 }
@@ -475,6 +479,7 @@ DigitalAnalogIn::DigitalAnalogIn(unsigned int inputNummer)
 //  }
 }
 
+
 void DigitalAnalogIn::setMaxi(bool pMaxi)
 {
   if (pMaxi)
@@ -492,6 +497,7 @@ void DigitalAnalogIn::setMaxi(bool pMaxi)
   
 }
 
+
 unsigned int DigitalAnalogIn::getValueDigital()
 {
   bool eingabe;
@@ -505,7 +511,7 @@ unsigned int DigitalAnalogIn::getValueDigital()
   }
   else
   {
-	  //ledcDetachPin(mInputPortNr);	//für den Fall, dass eine PWM auf dem Pin eingerichtet ist, wird diese vor einer Abfrage von dem Pin getrennt
+	  ledcDetachPin(mInputPortNr);	//für den Fall, dass eine PWM auf dem Pin eingerichtet ist, wird diese vor einer Abfrage von dem Pin getrennt
 	  if (INPUT_PULLUP != currentPinMode)
 	  {
 		  pinMode(mInputPortNr, INPUT_PULLUP);  //Pin-Modus einrichten: Input mit Pull-Up Widerstand
