@@ -79,7 +79,7 @@ void cOledHandler::printDisplay(void * arg)
   }
 
 	unsigned long starttime, endtime, runtime;
-  float angleTolerance = 5.0;
+  float angleTolerance = 5.0f;
   String orientation = "";
 
 	while (true)
@@ -166,27 +166,35 @@ void cOledHandler::printDisplay(void * arg)
 
 					display_intern.setCursor(1, 25);	//print servo values
 					display_intern.print("S" + (String)0 + ":" + (String)mOledPreBufferPtr->bufSHMptr->servoVal[0]);
+
+
           
           display_intern.setCursor(1, 35);  //print BNO value
           bno.getEvent(&event);             //get the angle values
           display_intern.println();
           display_intern.print("angle: ");
-          display_intern.print(event.orientation.x);
+          display_intern.print(abs(event.orientation.x));
 
           display_intern.println();
           display_intern.print("orientation: ");
 
           if( abs(event.orientation.x) > (360.f-angleTolerance) || abs(event.orientation.x) < (0.f+angleTolerance) ) {
              orientation = "N";
-          }else if( abs(event.orientation.x) > (90.f-angleTolerance) || abs(event.orientation.x) < (90.f+angleTolerance) ) {
+          }
+          
+          if( abs(event.orientation.x) > (90.f-angleTolerance) && abs(event.orientation.x) < (90.f+angleTolerance) ) {
              orientation = "O";
-          }else if( abs(event.orientation.x) > (180.f-angleTolerance) || abs(event.orientation.x) < (180.f+angleTolerance) ) {
+          }
+          
+          if( abs(event.orientation.x) > (180.f-angleTolerance) && abs(event.orientation.x) < (180.f+angleTolerance) ) {
              orientation = "S";
-          }else if( abs(event.orientation.x) > (270.f-angleTolerance) || abs(event.orientation.x) < (270.f+angleTolerance) ) {
+          }
+          
+          if( abs(event.orientation.x) > (270.f-angleTolerance) && abs(event.orientation.x) < (270.f+angleTolerance) ) {
              orientation = "W";
           }
 
-          display_intern.print(orientation);
+          display_intern.println(orientation);
 				default:
 					break;
 				}
@@ -194,6 +202,7 @@ void cOledHandler::printDisplay(void * arg)
 				display_intern.display();
 				mOledPreBufferPtr->mDisplayType = DT_Empty;
 				mOledPreBufferPtr->bufNewScreen = false;
+        orientation = "";
 			}
 			mOledPreBufferPtr->bufMutexLocked = false;
 		}

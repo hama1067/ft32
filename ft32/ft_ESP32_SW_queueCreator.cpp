@@ -10,6 +10,10 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 	//int qCreateErrorID = 0;	//FehlerID des ersten Fehlers der gefunden wurde
 
 	int ustrPos = 0;
+  String tmpBrightness = "";
+  String tmpPortNumber = "";
+  String tmpMode = "";
+  String tmpID = "";
 
 	checkChar(ustrPos, '#');	//Pruefen ob erstes Zeichen der uebergabe ein '#'
 
@@ -19,17 +23,22 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 		createPtr->nextElement->prevElement = createPtr;	//Zeiger zum Vorgaenger legen
 		createPtr = createPtr->nextElement;	//in neu angelegtes Element springen
 
-		ustrPos++;	//Zaehler auf erste Info nach '#' legen, sollte ID sein
-		createPtr->ID = uebergabestr.charAt(ustrPos);	//ID wird in allen Faellen gespeichert
-		ustrPos++;	//Zaehler auf Komma nach ID legen
+    ustrPos++; //Zaehler auf erste Info nach '#' legen, sollte ID sein (M, D, oder auch zweistellig LR, ...)
+
+    while(uebergabestr.charAt(ustrPos) != ',') { // zur Ueberpruefung zweistelliger ID Bloecke
+      tmpID+=uebergabestr.charAt(ustrPos);
+      ustrPos++;  //Zaehler auf XX legen
+    }
+    createPtr->ID = getQueueElementID(tmpID);  //ID wird in allen Faellen gespeichert
+    tmpID = "";
+
 		checkChar(ustrPos, ',');	//auf Komma pruefen
 		ustrPos++;	//zaehler auf erste Info nach ID legen
-
 		bool foundRootID = false;	//zur Suche bei EndIf und EndWhile, wird true wenn zugehoeriges While oder If gefunden wurde
 
 		switch (createPtr->ID)	//Auswahl entsprechend der Element-ID ('M', 'A', 'D', etc.)
 		{
-		case 'M':	//Motor
+		case MOTOR:	// Motor
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer eintragen
 			ustrPos++;	//Zaehler auf Komma legen
 			checkChar(ustrPos, ',');	//auf Komma pruefen
@@ -40,21 +49,59 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			ustrPos++;	//Zaehler auf Drehzahl legen
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Drehzahl (0..8, vgl. RoboPro)
 			break;
-		case 'L':	//Input Lampe
-			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
-			ustrPos++;	//Zaehler auf Komma legen
-			checkChar(ustrPos, ',');	//auf Komma pruefen
-			ustrPos++;	//Zaehler auf Helligkeit legen
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Helligkeit (0..8)
+    case ENCODER:  // Encoder
+
+      break;
+		case LED:	// LED strip pixel
+      while(uebergabestr.charAt(ustrPos) != ',') {
+        tmpPortNumber+=uebergabestr.charAt(ustrPos) - '0';
+        ustrPos++;  //Zaehler auf XX legen
+      }
+			createPtr->multi_digit_identifier = tmpPortNumber;  //Port-Nummer eintragen
+      tmpPortNumber = "";
+   
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++;  //Zaehler auf XX legen
+
+      while(uebergabestr.charAt(ustrPos) != ',') {
+        tmpBrightness+=uebergabestr.charAt(ustrPos) - '0';
+        ustrPos++;  //Zaehler auf XX legen
+      }
+      createPtr->multi_digit_value = tmpBrightness;  // XX
+      tmpBrightness = "";
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      ustrPos++;  //Zaehler auf  legen
+      createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);  //XX
 			break;
-		case 'N':	//Servo Motor
+    case LED_RESET:  // reset LED strip pixel
+      while(uebergabestr.charAt(ustrPos) != ';') {
+        if(uebergabestr.charAt(ustrPos) == 'A') {
+          tmpMode+=uebergabestr.charAt(ustrPos);
+        } else {
+          tmpMode+=uebergabestr.charAt(ustrPos) - '0';
+        }       
+        ustrPos++;  //Zaehler auf XX legen
+      }
+      createPtr->multi_digit_identifier = tmpMode;  // Port-Nummer oder Modus eintragen (0-10 oder A fuer alle LEDs) eintragen
+      tmpMode = "";
+
+      ustrPos--;
+      break;
+		case SERVO:	// Servo Motor
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer eintragen
 			ustrPos++;	//Zaehler auf Komma legen
 			checkChar(ustrPos, ',');	//auf Komma pruefen
 			ustrPos++;	//Zaehler auf Position legen
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//relative Servoposition (%) auslesen, Zaehler auf letzte Ziffer legen
 			break;
-		case 'D':	//Input Digital
+    case ROTATE:  // rotate around itself by an angle
+
+      break;
+    case CIRCLE:  // rotate around one wheel multiple times
+
+      break;
+		case INPUT_DIGITAL:	//Input Digital
 			if ('O' == uebergabestr.charAt(ustrPos))
 			{
 				createPtr->type = uebergabestr.charAt(ustrPos);	//Art eintragen ('O' wenn Output, nichts wenn Input)
@@ -72,10 +119,10 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
 			}
 			break;
-		case 'A':	//Input Analog
+		case INPUT_ANALOG:	//Input Analog
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
 			break;
-		case 'S':	//Warten
+		case SLEEP:	//Warten
 			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//read seconds, counter on last digit
 			ustrPos++;	//counter on dot
 			checkChar(ustrPos, '.');	//check for dot, throw error if not present
@@ -95,7 +142,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				createPtr->val_pwm_timems_loop = _tempTimems;	//store millisecs to queue
 			}
 			break;
-		case 'I':	//If
+		case IF:	//If
 			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Pruefung) eingtragen
 			ustrPos++;	//Zaehler auf Komma legen
 			checkChar(ustrPos, ',');	//auf Komma pruefen
@@ -114,7 +161,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			ustrPos++;	//Zaehler auf If-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			break;
-		case 'E':	//Else
+		case ELSE:	//Else
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwaerts nach dem zugehoerigen If
 			foundRootID = false;
@@ -136,7 +183,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				qCreateErrorID = 5; //Fehler, kein passendes If gefunden
 			}
 			break;
-		case 'J':	//EndIf
+		case ENDIF:	//EndIf
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
 			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwaerts nach dem zugehoerigen Else oder If
 			foundRootID = false;
@@ -158,7 +205,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				qCreateErrorID = 6; //Fehler, kein passendes If oder Else gefunden
 			}
 			break;
-		case 'W':	//While
+		case WHILE:	//While
 			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Pruefung oder Z-Zaehlschleife) eintragen
 			ustrPos++;	//Zaehler auf Komma legen
 			checkChar(ustrPos, ',');	//auf Komma pruefen
@@ -180,13 +227,13 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			ustrPos++;	//Zaehler auf While-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
 			break;
-		case 'X':	//EndWhile
+		case ENDWHILE:	//EndWhile
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
 			searchPtr = createPtr->prevElement;	//Zeiger sucht ab hier aufwaerts nach dem zugehoerigen While
 			foundRootID = false;
 			while (!foundRootID && (searchPtr != startPtr))	//solange kein passendes While gefunden und der Anfang nicht erreicht wurde
 			{
-				if ((searchPtr->ID == 'W') && (searchPtr->rootID == createPtr->rootID))	//While gefunden und passende rootID
+				if ((searchPtr->ID == WHILE) && (searchPtr->rootID == createPtr->rootID))	//While gefunden und passende rootID
 				{
 					searchPtr->jumpElement = createPtr;	//Sprungzeiger in While-Element legen
 					createPtr->jumpElement = searchPtr;	//Sprungzeiger in EndWhile-Element legen
@@ -225,7 +272,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 	//return qCreateErrorID;
 }
 
-//void queue_delete(commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
+/*//void queue_delete(commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
 //{
 //	Serial.println("[Q] Queue loeschen...");
 //	commonElement* workPtr = startPtr->nextElement;
@@ -280,4 +327,4 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 //			}	
 //		}
 //	}
-//}
+//}*/

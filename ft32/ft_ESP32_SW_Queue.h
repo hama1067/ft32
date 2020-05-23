@@ -5,27 +5,62 @@
 #include <Arduino.h>  //für String-Operationen
 #include <array>  //Library erlaubt Zugriffssicherung bei Arrays
 
-#include "ft_ESP32_SHM.h" //gemeinsamer Speicher (SHared Memory)
+#include "ft_ESP32_SHM.h" //gemeinsamer Speicher (Shared Memory)
 #include "ft_ESP32_IOobjects.h" //Klassen der Ausgänge (Hardwaretreiber)
 
 using namespace std;  //zum Handling der Arrays (für Zugriffssicherung)
 
-struct commonElement
-{
-	unsigned char ID = 0;	//'M', 'A', 'D', ...
-	commonElement* nextElement;	//naechstes regulaeres Element der Kette
-	commonElement* prevElement;	//vorhergehendes regulaeres Element der Kette
-	commonElement* jumpElement = NULL;	//zeigt bei: If -> Else+1/EndIf+1, Else -> EndIf+1, While -> EndWhile+1, EndWhile -> While
-	unsigned char type = 0;	//Art des Inputs "A"/"D" bei If und (normalem) While, "Z" bei Zaehlschleifen
-	unsigned char portNr = 0;	//0..7 bei Input (auch in If/While), 0..3 bei Aktor
-	unsigned char compare_direction = 0;	//Vergleichsoperator bei If/While, Richtung(0/1) Motor, Bremsen(2)
-	unsigned int val_pwm_timems_loop = 0;	//Vgl-Wert If/While, PWM Motor/Lampe, Wartezeit [ms], Wert Zaehlschleife
-	unsigned int time_s = 0;	//Zeitwert in Sekunden (nur von Wartezeit benutzt)
-	unsigned short rootID = 0;	//fortlaufende ID fuer If/While (um die EndIf und EndWhile korrekt zuordnen zu koennen)
+/*
+ * queue elment ID, defined by ft_ESP32_queueCreator.cpp and SHM content, 
+ * will be used by queueCreator by calling getQueueElementID()
+ */
+enum queueElementID {
+  MOTOR,          /*  M  */
+  ENCODER,        /*  EN */
+  LED,            /*  L  */
+  LED_RESET,      /*  LR */
+  SERVO,          /*  N  */
+  ROTATE,         /*  R  */
+  CIRCLE,         /*  C  */
+  INPUT_DIGITAL,  /*  D  */
+  INPUT_ANALOG,   /*  A  */
+  SLEEP,          /*  S  */
+  IF,             /*  I  */
+  ELSE,           /*  E  */
+  ENDIF,          /*  J  */
+  WHILE,          /*  W  */
+  ENDWHILE,       /*  X  */
+  UNKNOWN_ID
 };
 
-class SW_queue
-{
+struct commonElement {
+	queueElementID ID = UNKNOWN_ID;	        //'M', 'A', 'D', 'LR', ...
+	
+	commonElement* nextElement;	            // naechstes regulaeres Element der Kette
+	commonElement* prevElement;	            // vorhergehendes regulaeres Element der Kette
+	commonElement* jumpElement = NULL;	    // zeigt bei: If -> Else+1/EndIf+1, Else -> EndIf+1, While -> EndWhile+1, EndWhile -> While
+	
+	unsigned char type = 0;	                // Art des Inputs "A"/"D" bei If und (normalem) While, "Z" bei Zaehlschleifen
+	unsigned char portNr = 0;	              // 0..7 bei Input (auch in If/While), 0..3 bei Aktor
+  String multi_digit_identifier = "";     // uebergabe parameter, welcher mehr als eine Stelle aufweist (z.B. fuer die LED-Funktionsauswahl)
+	unsigned char compare_direction = 0;	  // Vergleichsoperator bei If/While, Richtung(0/1) Motor, Bremsen(2)
+  String multi_digit_value = "";          // uebergabe parameter, welcher mehr als eine Stelle aufweist (z.B. fuer die LED Helligkeit: 255)
+	unsigned int val_pwm_timems_loop = 0;	  // Vgl-Wert If/While, PWM Motor/Led, Wartezeit [ms], Wert Zaehlschleife
+	unsigned int time_s = 0;	              // Zeitwert in Sekunden (nur von Wartezeit benutzt)
+	
+	unsigned int val_angle = 0;             // Zwischenspeicher fuer uebergebenen Winkelwert
+  unsigned int val_distance_m0 = 0;       // Laufstrecke fuer Motor M0
+  double val_circle = 0;                  // Zwischenspeicher fuer Anzahl der Umdrehungen um ein fetstehendes Rad
+  unsigned int val_distance_m1 = 0;       // Laufstrecke fuer Motor M0 (fuer Block distance, da Parameter fuer 2 Motoren uebergeben werden)
+  unsigned char portNr1 = 0;              // 0..7 bei Input (auch in If/While), 0..3 bei Aktor
+  unsigned char compare_direction1 = 0;   // Vergleichsoperator bei If/While, Richtung(0/1) Motor, Bremsen(2)
+  unsigned int val_pwm_timems_loop1 = 0;  // Vgl-Wert If/While, PWM Motor/Lampe, Wartezeit [ms], Wert Zaehlschleife
+	
+	unsigned short rootID = 0;	            // fortlaufende ID fuer If/While (um die EndIf und EndWhile korrekt zuordnen zu koennen)
+};
+
+class SW_queue {
+  
 public:
 	/**
 	 *
@@ -111,14 +146,21 @@ public:
 	*/
 	void printErrors();
 
+ /*
+  * 
+  */
+ queueElementID getQueueElementID(String strID);
+
 private:
 	array<Motor, MOTOR_QTY> mMotorArray;  //Anlegen aller Motoren in einen Array
-	array<Lampe, LAMP_QTY> mLampeArray; //Anlegen aller Lampen in einen Array
+	array<Led, LED_QTY> mLedArray; //Anlegen aller Ledn in einen Array
 	array<CServoMotor, SERVO_QTY> mServoArray;	//Anlegen aller Servos in einen Array
 	array<DigitalAnalogIn, DAIN_QTY> mDAIn; //Anlegen aller Eingänge in einen Array
-	
+  //Encoder mEncoder;
+  //CAngle mAngle;
+  //EncoderKreis mEncoderKreis;
+  
 	//SHM* mSHM;	//Pointer on Shared memory
-
 	String uebergabestr;
 
 	commonElement* startPtr;  //Pointer auf Startobjekt der Queue

@@ -5,6 +5,8 @@
 #include "OledHandler.h"
 #include <time.h>
 
+extern Adafruit_NeoPixel * led_strip;
+
 void SW_queue::queueWorker(SHM* mSHM)
 {	
 	Serial.println("[QW] Queue abarbeiten...");	//Debug-Ausgabe... alle Seriellen Ausgaben sind zur Pruefung des Programmablaufs in der Konsole
@@ -14,30 +16,37 @@ void SW_queue::queueWorker(SHM* mSHM)
 	unsigned long starttime, endtime, runtime;
 	
 
-	while ((workPtr != endPtr) && mSHM->commonStart)	//wiederholen bis das letzte QE erreicht oder Stopp gedrueckt wurde
-	{
+	while ((workPtr != endPtr) && mSHM->commonStart) {	//wiederholen bis das letzte QE erreicht oder Stopp gedrueckt wurde
 		starttime = millis();
 		//starttime = clock() / (CLOCKS_PER_SEC / 1000);
 		int waitTime = 0;	//Variable zur Wartezeit [ms]
 
-		switch (workPtr->ID)
-		{
-		case 'M':
+		switch (workPtr->ID) {
+		case MOTOR:
 			mMotorArray.at(workPtr->portNr).setValues(workPtr->compare_direction, workPtr->val_pwm_timems_loop);	//Motordaten.set, Ausgangspins werden gesetzt
 			mSHM->motorVal[workPtr->portNr] = (1 == workPtr->compare_direction ? workPtr->val_pwm_timems_loop : -workPtr->val_pwm_timems_loop);
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'L':
-			mLampeArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Lampendaten.set -> sollte sofort ausgefuehrt werden
-			mSHM->lampVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
+    case ENCODER:  // Encoder
+
+      break;
+		case LED:
+			mLedArray.at((workPtr->multi_digit_identifier).toInt()).setValues((workPtr->multi_digit_value).toInt(), workPtr->val_pwm_timems_loop); //Leddaten.set -> sollte sofort ausgefuehrt werden
+			mSHM->ledVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'N':
+    case LED_RESET:
+      led_reset(workPtr->multi_digit_identifier, mLedArray);
+      workPtr = workPtr->nextElement;  //Zeiger auf naechstes QE legen
+      break;
+		case SERVO:
 			mServoArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Servo.set -> sollte sofort ausgefuehrt werden
 			mSHM->servoVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'D':	//Handling der Digitalen Anschluesse
+
+      
+		case INPUT_DIGITAL:	//Handling der Digitalen Anschluesse
 			if (workPtr->type == 'O')	//Digitalen Ausgang setzen
 			{
 				mDAIn.at(workPtr->portNr).setValueDigital(workPtr->compare_direction);	//Ein-/Ausschalten des Pins
@@ -56,7 +65,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			}
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'A':	//wird von der HMI noch nicht verwendet
+		case INPUT_ANALOG:	//wird von der HMI noch nicht verwendet
 			mSHM->analogVal[workPtr->portNr] = mDAIn.at(workPtr->portNr).getValueAnalog()/32;	//Wert in Container schreiben, 12Bit-Wert auf 7Bit-Wert skalieren (Beschraenkung wegen HMI)
 			//Wenn das Display zur Digitalanzeige benutzt wird:
 			/*
@@ -67,7 +76,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			*/
 			//Ende Display
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
-		case 'S':
+		case SLEEP:
 			waitTime = workPtr->time_s * 1000;	//Sekunden in warten [ms] speichern
 			waitTime += workPtr->val_pwm_timems_loop * 10;	//Millisekunden in warten [ms] speichern
 			Serial.print("[QW] Warte ");
@@ -75,7 +84,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			Serial.println(" ms");
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
 			break;
-		case 'I':
+		case IF:
 			if (workPtr->type == 'D')	//Digitalen Eingang abfragen
 			{
 				unsigned int logicState = mDAIn.at(workPtr->portNr).getValueDigital();
@@ -162,13 +171,13 @@ void SW_queue::queueWorker(SHM* mSHM)
 				}
 			}
 			break;
-		case 'E':	//Else
+		case ELSE:	//Else
 			workPtr = workPtr->jumpElement->nextElement;	//nach If-Pfad wird Else-Pfad uebersprungen. Zeiger auf eins nach zugehoerigem Endif legen
 			break;
-		case 'J':	//Endif
+		case ENDIF:	//Endif
 			workPtr = workPtr->nextElement;	//hier passiert nix, Endif wird uebersprungen
 			break;
-		case 'W':
+		case WHILE:
 			if (workPtr->type == 'Z')
 			{
 				Serial.print("[QW] Zaehlschleife: ");
@@ -252,7 +261,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 				}
 			}
 			break;
-		case 'X':	//EndWhile
+		case ENDWHILE:	//EndWhile
 			Serial.println("[QW] Wiederhole Schleife");
 			workPtr = workPtr->jumpElement;	//Springt zurueck zu While und dortiger Pruefung
 			break;
@@ -260,15 +269,17 @@ void SW_queue::queueWorker(SHM* mSHM)
 			break;
 		}
 		
-		//DEBUG MIT DISPLAY - Anzeige aller Eingaenge (digital und analog)
-		//cOledHandler::getInstance()->printOledMessage("T1:" + (String)mDAIn.at(0).getValueDigital());
 		cOledHandler::getInstance()->printQueueWindow(mSHM);
-		/*Serial.println("State: ");
+		
+		/* debug
+    //DEBUG MIT DISPLAY - Anzeige aller Eingaenge (digital und analog)
+    //cOledHandler::getInstance()->printOledMessage("T1:" + (String)mDAIn.at(0).getValueDigital());
+    
+    Serial.println("State: ");
 		for (int i = 0; i < 8; i++)
 		{
 			Serial.print("T" + (String)i + ":" + (String)mSHM->digitalVal[i]);
-		}*/
-		/*
+		}
 		for(int i = 0; i < DAIN_QTY; i++)
 		{
 			display.setCursor((i%4)*32,(i/4)*16);
@@ -280,8 +291,9 @@ void SW_queue::queueWorker(SHM* mSHM)
 		}
 		display.display();
 		display.clearDisplay();
-		*/
-		//~DEBUG MIT DISPLAY
+		//~DEBUG MIT DISPLAY */
+    
+    led_update(mLedArray);
 
 		do {
 			if (waitTime > 0)	//wenn Wartezeit vorhanden
@@ -290,18 +302,24 @@ void SW_queue::queueWorker(SHM* mSHM)
 				waitTime -= 10;	//Wartezeit um 10ms reduzieren
 				delay(10);
 			}
+			
 			if (mSHM->commonPause)	//Pause-Button wurde gedrueckt
 			{
 				Serial.println("[Q_work] Pause gestartet");
 				Motor mMotorSave[MOTOR_QTY];// mMotorArray.size()];	//Sicherungsobjekte fuer Motoren anlegen
-				Lampe mLampeSave[LAMP_QTY];// mLampeArray.size()];	//Sicherungsobjekte fuer Lampen anlegen
+				Led mLedSave[LED_QTY];// mLedArray.size()];	//Sicherungsobjekte fuer Ledn anlegen
 				for (int i = 0; i < mMotorArray.size(); i++)
 				{
 					mMotorSave[i] = mMotorArray[i];	//Motor i sichern
 					mMotorArray[i].setValues(true, 0);	//Ausgang zur 0 setzen
-					mLampeSave[i] = mLampeArray[i];	//Lampe i sichern
-					mLampeArray[i].setValues(0);	//Ausgang zur 0 setzen
 				}
+
+        for (int i = 0; i < mLedArray.size(); i++)
+        {
+          mLedSave[i] = mLedArray[i]; //Led i sichern
+          mLedArray[i].setValues(0, 0);  //Ausgang zur 0 setzen
+        }
+       
 				do {	//in Schleife auf Aufhebung des Pausezustandes warten
 					delay(10);	//10ms warten (schohnt CPU)
 				} while (mSHM->commonPause && mSHM->commonStart);	//warten auf Aufhebung der Pause oder auf Stopp
@@ -312,8 +330,8 @@ void SW_queue::queueWorker(SHM* mSHM)
 				{
 					mMotorArray[i] = mMotorSave[i];	//Ausgangswerte zuruecksetzen
 					mMotorArray[i].reRun();	//Ausgang neu setzen
-					mLampeArray[i] = mLampeSave[i];
-					//mLampeArray[i].reRun();
+					mLedArray[i] = mLedSave[i];
+					//mLedArray[i].reRun();
 				}
 			}
 		} while (waitTime > 0 && mSHM->commonStart);	//warten auf Ende der Pausenzeit oder auf Stopp
@@ -325,7 +343,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 		runtime = runtime <= cycleTime ? runtime : cycleTime;	//limit runtime to max. 10ms for delay();
 		//delay(cycleTime - runtime);	//ensures a constant cycle time for queue-thread while running
 		delay(1);
-    }
+  }
 
 	Serial.println("[Q_work] Queue abarbeiten Ende.\n");
 	
@@ -334,8 +352,15 @@ void SW_queue::queueWorker(SHM* mSHM)
 	for (int i = 0; i < mMotorArray.size(); i++)	//Am Ende des Programms zuruecksetzen der Ausgaenge auf 0
 	{
 		mMotorArray[i].setValues(true, 0);
-		mLampeArray[i].setValues(0);
 	}
+
+  for (int i = 0; i < mLedArray.size(); i++)  //Am Ende des Programms zuruecksetzen der Ausgaenge auf 0
+  {
+    mLedArray[i].setValues(0,0);
+  }
+
+  led_strip->clear();
+  led_strip->show();
 
 	mServoArray[0].setValues(100);
 

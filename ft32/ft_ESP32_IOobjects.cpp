@@ -1,54 +1,38 @@
 /*
-Ausgangstreiber für ESP32-Fischertechnik-Anbindung
-Autor: Johannes Marquart
-*/
+ * Ausgangstreiber für ESP32-Fischertechnik-Anbindung
+ * Autor: Johannes Marquart
+ * 
+ * modified by: F.J.P
+ * date: 2020-04-17
+ */
+
 #include "ft_ESP32_IOobjects.h"
-#include <Wire.h>
-#include <Arduino.h>
-//#include <SparkFunSX1509.h>
 
-SX1509 sx1509Object;        //i2c SDA = PIN 21, SCL = PIN 22
-
-int PORT_M_PWM[MOTOR_QTY];// = {};//Output-Pins Motor-Drehzahl
-int PORT_L_PWM[LAMP_QTY]; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert
-int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
+int PORT_M_PWM[MOTOR_QTY];    // = {};//Output-Pins Motor-Drehzahl
+int PORT_IN[DAIN_QTY];        //Input-Pins Ditital/Analog
 bool ISMAXI = false;
 
-/*
-bool initExtension()
-{
-    delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
-    if (!sx1509Object.begin(SX1509_I2C_ADDRESS))	//starten des SX1509 mit SX1509-I²C-Adresse, wenn false (Fehler erkannt -> kein SX1509 angeschlossen)
-    {
-		Serial.println("[io] SX1509-Object could not be initialized.");
-		return false;  
-    }
-    else	//wenn true (SX1509 angeschlossen)
-    {
-		Serial.println("[io] SX1509-Object initialized.");  
-    }
-	sx1509Object.clock(INTERNAL_CLOCK_2MHZ, 4);	//Einrichten der Frequenz? Warum nicht 'oben'?
-	return true;
-}
-*/
+/* ====================================================================================================================== */
 
-CheckMaxiExtension::CheckMaxiExtension()
-{
+/* i2c SDA = PIN 21, SCL = PIN 22 */
+SX1509 sx1509Object;
+
+/* led strip, connected to pin LED_PIN */
+Adafruit_NeoPixel * led_strip = new Adafruit_NeoPixel(LED_QTY, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+/* ====================================================================================================================== */
+
+CheckMaxiExtension::CheckMaxiExtension() {
   mAddress = SX1509_I2C_ADDRESS;
   mBoard = "";
 }
 
-CheckMaxiExtension::CheckMaxiExtension(byte address)
-{
+CheckMaxiExtension::CheckMaxiExtension(byte address) {
   mAddress = address;
   mBoard = "";
 }
 
-
-
-
-bool CheckMaxiExtension::CheckMaxi()
-{
+bool CheckMaxiExtension::CheckMaxi() {
 	delay(1500);    //etwas warten, damit I2C möglich ist (ansonsten Kommunikationsprobleme)
 	if (!sx1509Object.begin(SX1509_I2C_ADDRESS))	//starten des SX1509 mit SX1509-I²C-Adresse, wenn false (Fehler erkannt -> kein SX1509 angeschlossen)
 	{
@@ -61,10 +45,6 @@ bool CheckMaxiExtension::CheckMaxi()
 		for (int i = 0; i < MOTOR_QTY; i++)
 		{
 			PORT_M_PWM[i] = MINI_PORT_M_PWM[i];
-		}
-		for (int i = 0; i < LAMP_QTY; i++)
-		{
-			PORT_L_PWM[i] = MINI_PORT_L_PWM[i];
 		}
 		for (int i = 0; i < DAIN_QTY; i++)
 		{
@@ -85,10 +65,6 @@ bool CheckMaxiExtension::CheckMaxi()
 		{
 			PORT_M_PWM[i] = MAXI_PORT_M_PWM[i];
 		}
-		for (int i = 0; i < LAMP_QTY; i++)
-		{
-			PORT_L_PWM[i] = MAXI_PORT_L_PWM[i];
-		}
 		for (int i = 0; i < DAIN_QTY; i++)
 		{
 			PORT_IN[i] = MAXI_PORT_IN[i];
@@ -97,9 +73,9 @@ bool CheckMaxiExtension::CheckMaxi()
 	}
 }
 
+/* ====================================================================================================================== */
 
-Motor::Motor()
-{
+Motor::Motor() {
 	//Abschalten des Motortreibers, welcher von diesem Objekt versorgt wird.
 	//Evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
 	pinMode(PIN_M_INH, OUTPUT);
@@ -112,17 +88,17 @@ Motor::Motor()
 	mDrehzahl = 0;
 }
 
-
-Motor::Motor(unsigned int motorNr)
-{
+Motor::Motor(unsigned int motorNr) {
 	//Abschalten des Motortreibers, evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
 	pinMode(PIN_M_INH, OUTPUT);
 	digitalWrite(PIN_M_INH, LOW);
   
 	//Initialisieren des Motorobjektes
-	mMotorNr = motorNr;
-	mDirectionMode = 1;
-	mDrehzahl = 0;
+  mMotorNr = motorNr;
+  mPortNrPWM = 0;
+  mPortNrDir = 0;
+  mDirectionMode = 2;
+  mDrehzahl = 0;
 
 /*
   if (ISMAXI)
@@ -154,9 +130,7 @@ Motor::Motor(unsigned int motorNr)
 //  }
 }
 
-
-void Motor::setMaxi(bool pMaxi)
-{
+void Motor::setMaxi(bool pMaxi) {
 	mPortNrPWM = PORT_M_PWM[mMotorNr];
 	if (pMaxi)
 	{
@@ -181,17 +155,21 @@ void Motor::setMaxi(bool pMaxi)
 	}
 }
 
-
-void Motor::setValues(unsigned char directionMode, unsigned int drehzahl)
-{
+void Motor::setValues(unsigned char directionMode, unsigned int drehzahl) {
+  /*
+   *  mDirectionMode: 
+   *  0 -> right
+   *  1 -> left
+   *  2 -> brake
+  */
   mDirectionMode = directionMode;
   mDrehzahl = drehzahl;
 
   digitalWrite(PIN_M_INH, LOW);
-  
+
   Serial.print("[io] Motor " + (String)mMotorNr);
   Serial.print(" dreht in Richtung " + (String)mDirectionMode);
-  Serial.print(" mit Drehzahl " + (String)mDrehzahl);
+  Serial.println(" mit Drehzahl " + (String)mDrehzahl);
 
   //Berechnen der PWM-Werte
   int drehzahl_pwm;
@@ -218,7 +196,10 @@ void Motor::setValues(unsigned char directionMode, unsigned int drehzahl)
       analogWrite(PORT_M_1[1],0);
       analogWrite(PORT_M_1[0],drehzahl_pwm);
     }   
-  } else if (mDirectionMode == 0) {
+  } 
+  
+  // mDirectionMode == 1 -> right
+  else if (mDirectionMode == 0) {
     //digitalWrite(mPortNrDir, LOW);
     if (ISMAXI) {
       sx1509Object.digitalWrite(mPortNrDir, 0);  //Richtungspin wird auf LOW - Linkslauf gesetzt
@@ -231,7 +212,10 @@ void Motor::setValues(unsigned char directionMode, unsigned int drehzahl)
       analogWrite(PORT_M_1[0],0);
       analogWrite(PORT_M_1[1],drehzahl_pwm);
     }
-  } else {
+  } 
+  
+  // mDirectionMode == 2 -> brake
+  else {
     digitalWrite(PIN_M_INH, HIGH);  //Einschalten Motortreiber
     
     if(mMotorNr==0 || mMotorNr==2) {
@@ -252,16 +236,16 @@ void Motor::setValues(unsigned char directionMode, unsigned int drehzahl)
   //Serial.println(drehzahl_pwm);
 }
 
-void Motor::reRun()
-{
+void Motor::reRun() {
   if(mDrehzahl > 0)
   {
     setValues(mDirectionMode, mDrehzahl);
   }
 }
 
-CServoMotor::CServoMotor()
-{
+/* ====================================================================================================================== */
+
+CServoMotor::CServoMotor() {
 	mMotorNr = 0;
 	mPortNrPWM = 0;
 	mMinDuty = 4;
@@ -269,8 +253,7 @@ CServoMotor::CServoMotor()
 	mRelDuty = 0;
 }
 
-CServoMotor::CServoMotor(unsigned int motorNr, unsigned int dutyCycle)
-{
+CServoMotor::CServoMotor(unsigned int motorNr, unsigned int dutyCycle) {
   mPortNrPWM = 13;
 	//init of servomotor-object
 	mMotorNr = motorNr;
@@ -285,8 +268,7 @@ CServoMotor::CServoMotor(unsigned int motorNr, unsigned int dutyCycle)
   
 }
 
-void CServoMotor::setMaxi(bool pMaxi)
-{
+void CServoMotor::setMaxi(bool pMaxi) {
 	mPortNrPWM = 13;// PORT_M_PWM[mMotorNr];
 	if (pMaxi)
 	{
@@ -302,9 +284,7 @@ void CServoMotor::setMaxi(bool pMaxi)
 	}
 }
 
-
-void CServoMotor::setValues(unsigned int dutyCycle)
-{
+void CServoMotor::setValues(unsigned int dutyCycle) {
 	if (!ISMAXI)
 	{
 		mRelDuty = dutyCycle < 100 ? dutyCycle : 100;	//limiting maximum value to 100(%)
@@ -318,8 +298,7 @@ void CServoMotor::setValues(unsigned int dutyCycle)
 	}
 }
 
-void CServoMotor::reRun()
-{
+void CServoMotor::reRun() {
 	if (!ISMAXI)
 	{
     //analogWrite(mPortNrPWM, (4095 * (100 * mMinDuty + (mMaxDuty - mMinDuty) * mRelDuty)) / 10000);
@@ -327,146 +306,153 @@ void CServoMotor::reRun()
 	}
 }
 
-Lampe::Lampe()
-{
-  //Abschalten des Lampentreibers, welcher von diesem Objekt versorgt wird.
-  //Evtl. noch undefinierte Pins können so kein falsches Signal an den Lampentreiber geben
-  pinMode(PIN_L_INH, OUTPUT);
-  digitalWrite(PIN_L_INH, LOW);
-  
-  mLampeNr = 0;
-  mPortNrPWM = 0;
-  mHelligkeit = 0;
+/* ====================================================================================================================== */
+
+void led_init() {
+  /* initialize led strip */
+  pinMode(LED_PIN,OUTPUT);
+  led_strip->begin();
+  led_strip->show();
 }
 
-Lampe::Lampe(unsigned int lampeNr)
-{
-  //Abschalten des Motortreibers, evtl. noch undefinierte Pins können so kein falsches Signal an den Motortreiber geben
-  pinMode(PIN_L_INH, OUTPUT);
-  digitalWrite(PIN_L_INH, LOW);
-  
-  //Initialisieren des Lampenobjektes
-  mLampeNr = lampeNr;
-
-
-    //Folgender Abschnitt erlaubt es pro 'pololu a4990 dual-motor-driver' 4 Lampen unabhängig voneinander anzusteuern
-    // Update:
-   // Wichtiger Hinweis. Es nach dem Code des WS17/18 waren 8 Möglichliche Lampen implementiert.'
-   // Für das Mini-Board ist jedoch nur ein Treiber Vorhanden, also nur 4 Lampen
-   // Für das Maxi-Board liegen die DIR-Ausgänge auf dem Extension-Board, daher werden sie nicht verwendet. Es können jedoch alle vier PWM-Ausgänge verwendet werden.
-  
-//  if (ISMAXI)
-//  {
-//        mPortNrPWM = PORT_L_PWM[lampeNr];
-//  }
-//  else
-//  {
-//        if(mLampeNr % 2 == 0) //Lampen 0 und 2 werden durch Pins der PWM-Reihe angesteuert
-//        {
-//          mPortNrPWM = PORT_L_PWM[mLampeNr/2];
-//        }
-//        else  //Lampen 1 und 3 werden durch Pins der DIR-Reihe angesteuert
-//        {
-//          mPortNrPWM = PORT_M_DIR[mLampeNr/2];
-//        }
-//  }
-//  
-//  mHelligkeit = 0;
-//
-//  //Zuweisen des PWM-Generators an einen Port entsprechend der Lampennummer...
-//  ledcAttachPin(mPortNrPWM, mLampeNr);  //Pin-Nr, PWM-Generator Nr
-//  ledcSetup(mLampeNr, 21700, 8);  //PWM-Generator Nr, 21.7 kHz PWM, 8-bit resolution (0..255)
-//
-//  // Ausgang ausschalten
-//  ledcWrite(mLampeNr, 0); //frühzeitiges Definieren des PWM-Generators (PWM-Generator Nr., PWM-Wert (0..255))
-  
+void led_clear() {
+  /* clear buffer (pixel information) and update through show() */
+  led_strip->clear();
+  led_strip->show();
 }
 
-
-void Lampe::setMaxi(bool pMaxi)
-{
-  if (pMaxi)
-  {
-        mPortNrPWM = PORT_L_PWM[mLampeNr];
-  }
-  else
-  {
-        if(mLampeNr % 2 == 0) //Lampen 0 und 2 werden durch Pins der PWM-Reihe angesteuert
-        {
-          mPortNrPWM = PORT_L_PWM[mLampeNr/2];
-        }
-        else  //Lampen 1 und 3 werden durch Pins der DIR-Reihe angesteuert
-        {
-          mPortNrPWM = PORT_M_DIR[mLampeNr/2];
-        }
-  }
-  
-  mHelligkeit = 0;
-
-  //Zuweisen des PWM-Generators an einen Port entsprechend der Lampennummer...
-  ledcAttachPin(mPortNrPWM, mLampeNr);  //Pin-Nr, PWM-Generator Nr
-  ledcSetup(mLampeNr, 21700, 8);  //PWM-Generator Nr, 21.7 kHz PWM, 8-bit resolution (0..255)
-
-  // Ausgang ausschalten
-  ledcWrite(mLampeNr, 0); //frühzeitiges Definieren des PWM-Generators (PWM-Generator Nr., PWM-Wert (0..255))
-}
-
-
-void Lampe::setValues(unsigned int helligkeit)
-{
-  mHelligkeit = helligkeit;
-  Serial.print("[io] Lampe ");
-  Serial.print(mLampeNr);
-  Serial.print(" leuchtet mit Helligkeit ");
-  Serial.println(mHelligkeit);
-  
-  //Berechnen der PWM - Werte
-  int helligkeit_pwm;
-  if (mHelligkeit > 7)
-  {
-    helligkeit_pwm = 255;
-  }
-  else if (mHelligkeit < 1)
-  {
-    helligkeit_pwm = 0;
-  }
-  else
-  {
-    helligkeit_pwm = mHelligkeit * 256 / 8;
-  }
-
-  if(mLampeNr%2 == 1) //bei den Lampen 1,3,5,7 sind laut Datenblatt die PWM invertiert (255 = min, 0 = max)
-  {
-    helligkeit_pwm = 255 - helligkeit_pwm;
-  }
-  
-  //Zuweisen des PWM-Werts an den richtigen Port entsprechend der Lampennummer
-  ledcWrite(mLampeNr, helligkeit_pwm);
-  //digitalWrite(PORT_M_DIR[mLampeNr], HIGH); //Richtungsangabe, siehe Beschreibung im Konstruktor
-
-  digitalWrite(PIN_L_INH, HIGH);  //Einschalten Lampentreiber
-  
-  Serial.print("[io] PWM: ");
-  Serial.print(mPortNrPWM);
-  Serial.print(" Val: ");
-  Serial.println(helligkeit_pwm);
-}
-
-void Lampe::reRun()
-{
-  if(mHelligkeit > 0)
-  {
-    setValues(mHelligkeit);
+void led_reset(String &option, array<Led, LED_QTY> &ledArray) {
+  if(option == "A") {
+    for(int i=0; i < LED_QTY; i++) {
+      ledArray.at(i).setValues(0, 0);  //Ausgang zur 0 setzen
+    }
+    Serial.println("[io] Setze alle LEDs zurueck ...");
+  } else {
+     ledArray.at(option.toInt()).setValues(0, 0);
+     Serial.println("[io] Setze LED" + option + " zurueck ...");
   }
 }
 
-DigitalAnalogIn::DigitalAnalogIn()
-{
+void led_update(array<Led, LED_QTY> &ledArray) {    
+    for(int i=0; i < LED_QTY; i++) {
+      ledArray[i].reRun();
+    }    
+    
+    /* update led strip */
+    led_strip->show();
+}
+
+void led_update(Led ledArray[]) {
+    /* update led strip */
+    led_strip->clear();
+    
+    for(int i=0; i < LED_QTY; i++) {
+      ledArray[i].reRun();  
+    }    
+
+    led_strip->show();
+}
+
+Led::Led() {
+  //Abschalten des Ledntreibers, welcher von diesem Objekt versorgt wird und setzen der default Werte
+  
+  mLedNr = 0;
+  mColor = 0; // -> RED
+  mColorName = "RED";
+  mBrightness = 0;
+  
+  mColorRGB[0] = 255;
+  mColorRGB[1] = 0;
+  mColorRGB[2] = 0;
+}
+
+Led::Led(unsigned int ledNr) {
+  //Initialisieren des Led-objektes
+  mLedNr = ledNr;
+  mColor = 0; // -> Off
+  mColorName = "RED";
+  mBrightness = 0;
+
+  mColorRGB[0] = 255;
+  mColorRGB[1] = 0;
+  mColorRGB[2] = 0;
+}
+
+void Led::setMaxi(bool pMaxi) {
+  /* TODO */
+}
+
+void Led::setValues(int brightness, int ledColor) {
+  mColor = ledColor;
+  mBrightness = brightness;
+
+  setLedRGBColorByIdentifier(ledColor, brightness);
+  
+  Serial.print("[io] led " + (String)mLedNr + " leuchtet mit Helligkeit ");
+  Serial.print(mBrightness);
+  Serial.println(" und Farbe " + getRGBColorName());
+  
+  led_strip->setPixelColor(mLedNr,mColorRGB[0],mColorRGB[1],mColorRGB[2]); 
+}
+
+void Led::reRun() {
+  if(mBrightness > 0) {
+    led_strip->setPixelColor(mLedNr,mColorRGB[0],mColorRGB[1],mColorRGB[2]); 
+  }
+}
+
+void Led::setLedRGBColorByIdentifier(int colorNumber, int brigthness) {
+
+  mColorRGB[0] = 0;
+  mColorRGB[1] = 0;
+  mColorRGB[2] = 0;
+
+  if(brigthness >= 0 && brigthness < 256) {
+    switch(colorNumber) {
+      case 0:
+        mColorName = "Off";
+        mColorRGB[0] = 0;
+        mColorRGB[1] = 0;
+        mColorRGB[2] = 0;
+      break;
+      case 1:
+        mColorName = "RED";
+        mColorRGB[0] = brigthness;
+      break;
+      case 2:
+        mColorName = "GREEN";
+        mColorRGB[1] = brigthness;
+      break;
+      case 3:
+        mColorName = "BLUE";
+        mColorRGB[2] = brigthness;
+      break;
+      default:
+        mColorName = "RED";
+        mColorRGB[0] = 255;
+      break;
+    }
+  } else {
+    mColorName = "RED";
+    mColorRGB[0] = 255;    
+  }
+}
+
+String Led::getRGBColorName() {
+  return mColorName;
+}
+
+/* ====================================================================================================================== */
+
+
+
+/* ====================================================================================================================== */
+
+DigitalAnalogIn::DigitalAnalogIn() {
   mInputNummer = 0;
 }
 
-DigitalAnalogIn::DigitalAnalogIn(unsigned int inputNummer)
-{
+DigitalAnalogIn::DigitalAnalogIn(unsigned int inputNummer) {
   mInputNummer = inputNummer;
 
 //  if (ISMAXI)
@@ -479,9 +465,7 @@ DigitalAnalogIn::DigitalAnalogIn(unsigned int inputNummer)
 //  }
 }
 
-
-void DigitalAnalogIn::setMaxi(bool pMaxi)
-{
+void DigitalAnalogIn::setMaxi(bool pMaxi) {
   if (pMaxi)
   {
     mInputPortNr = SX1509_PORT_DIO_PWMO[mInputNummer];
@@ -497,9 +481,7 @@ void DigitalAnalogIn::setMaxi(bool pMaxi)
   
 }
 
-
-unsigned int DigitalAnalogIn::getValueDigital()
-{
+unsigned int DigitalAnalogIn::getValueDigital() {
   bool eingabe;
   if (ISMAXI)
   {
@@ -521,8 +503,7 @@ unsigned int DigitalAnalogIn::getValueDigital()
   return (unsigned int) eingabe;
 }
 
-unsigned int DigitalAnalogIn::getValueAnalog()
-{
+unsigned int DigitalAnalogIn::getValueAnalog() {
   unsigned int eingabe;
 
   if (ISMAXI)
@@ -544,8 +525,7 @@ unsigned int DigitalAnalogIn::getValueAnalog()
   return eingabe;
 }
 
-void DigitalAnalogIn::setValueDigital(bool ledLevel)
-{
+void DigitalAnalogIn::setValueDigital(bool ledLevel) {
   if (ISMAXI)
   {
     sx1509Object.pinMode(mInputPortNr, OUTPUT);  //Pin_Modus einrichten: Output
@@ -584,7 +564,7 @@ void DigitalAnalogIn::setValueDigital(bool ledLevel)
   }
 }
 
-
+/* ====================================================================================================================== */
 
 /***
  * 
@@ -592,7 +572,6 @@ void DigitalAnalogIn::setValueDigital(bool ledLevel)
  * FOLGENDER ABSCHNITT IST NICHT IMPLEMENTIERT IN DER QUEUE
  * 
  * 
- */
 //#ifdef MAXI
 //DigitalIO_PWMout::DigitalIO_PWMout()
 //{
@@ -676,3 +655,4 @@ void DigitalAnalogIn::setValueDigital(bool ledLevel)
 //}
 //
 //#endif
+*/

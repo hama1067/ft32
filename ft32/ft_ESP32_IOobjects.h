@@ -1,54 +1,55 @@
 /*
-Ausgangstreiber für ESP32-Fischertechnik-Anbindung
-Autor: Johannes Marquart
-
-Editiert von WS18/19
-
-
-Hinweis: MaxiBoard kann keine Analogdaten lesen
-*/
+ * Ausgangstreiber für ESP32-Fischertechnik-Anbindung
+ * Autor: Johannes Marquart
+ *
+ * Editiert von SS2020 by F.J.P
+ *
+ *
+ * Hinweis: MaxiBoard kann keine Analogdaten lesen
+ */
 #ifndef FT_ESP32_IOOBJECTS_H
 #define FT_ESP32_IOOBJECTS_H
 
 #include <Arduino.h>
 #include <SparkFunSX1509.h>
-
+#include <Wire.h>
 #include <analogWrite.h>
+#include <Adafruit_NeoPixel.h>
+
+/*  */
+#include <array>
+using namespace std;
 
 //#include <SX1509_IO_Expander/src/SparkFunSX1509.h>
 
-//Festlegen Anzahl Ports
-constexpr size_t MOTOR_QTY = 4;	//max. Anzahl der Motoren
-constexpr size_t LAMP_QTY = 4;  //max. Anzahl der Lampen
-constexpr size_t DAIN_QTY = 8;  //max. Anzahl der Eingänge (digital/analog) (Normal: 8, Wettbewerb: 2)
-constexpr size_t SERVO_QTY = 1;	//max. Anzahl der Servomotoren
+/* ports */
+constexpr size_t MOTOR_QTY = 2;	    // max. Anzahl der Motoren
+constexpr size_t LED_QTY = 11;      // max. Anzahl der Leds
+constexpr size_t DAIN_QTY = 8;      // max. Anzahl der Eingänge (digital/analog) (Normal: 8, Wettbewerb: 2)
+constexpr size_t SERVO_QTY = 1;	    // max. Anzahl der Servomotoren
 constexpr size_t DIO_PWMO_QTY = 8;
+
+#define LED_PIN 14                                                            // Output-Pin Led strip
+extern int PORT_IN[DAIN_QTY];                                                 // Input-Pins Ditital/Analog
+
+const int PORT_M_0[2] = {17, 16};                                             // Motor 0, AIN1=17, AIN2=16
+const int PORT_M_1[2] = {2, 4};                                               // Motor 1, AIN1=4, AIN2=2
+const int PIN_M_INH = 27;                                                     // Output-Pin Einschalten Motortreiber
+
+extern int PORT_M_PWM[MOTOR_QTY];                                             // Output-Pins Motor-Drehzahl
+const int PORT_M_DIR[MOTOR_QTY] = { 16, 2 };                                  // ,16, 2};	//Output-Pins Motor-Richtung !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
+const int PORT_M_ENCODER[MOTOR_QTY] = { 36, 39 };                             // ,25, 26};//InputPins Motor Encoder -> MOMENTAN NICHT VERWENDET
 
 extern bool ISMAXI;
 
-extern int PORT_M_PWM[MOTOR_QTY];	//Output-Pins Motor-Drehzahl
-extern int PORT_L_PWM[LAMP_QTY];	//Output-Pins Lampe, werden hier über den selben Treiber angesteuert
-extern int PORT_IN[DAIN_QTY]; //Input-Pins Ditital/Analog
-
-const int PORT_M_DIR[MOTOR_QTY] = { 16, 2, 16, 2};	//Output-Pins Motor-Richtung     !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
-const int PORT_M_ENCODER[MOTOR_QTY] = { 32, 33, 25, 26};	//InputPins Motor Encoder      MOMENTAN NICHT VERWENDET
-
-const int PORT_M_0[2] = {17,16};         //Motor 0, AIN1=17, AIN2=16
-const int PORT_M_1[2] = {2,4};         //Motor 1, AIN1=4, AIN2=2
-
-const int MINI_PORT_M_PWM[MOTOR_QTY] = { 17, 4, 17, 4 };  //Output-Pins Motor-Drehzahl     !! NUR 16 und 2 sind Verbunden, Rest ist Dummy
-const int MINI_PORT_L_PWM[LAMP_QTY] = { 17, 4, 17, 4 }; //Output-Pins Lampe, werden hier über den selben Treiber angesteuert!! NUR 16 und 2 sind Verbunden, Rest ist Dummy
+const int MINI_PORT_M_PWM[MOTOR_QTY] = { 17, 4};//, 17, 4 };                  // Output-Pins Motor-Drehzahl !! NUR 16 und 2 sind Verbunden, Rest ist Dummy
 const int MINI_PORT_IN[DAIN_QTY] = { 32, 25, 33, 32, 25, 33, 32, 25 };
 
-const int MAXI_PORT_M_PWM[MOTOR_QTY] = { 4, 2, 13, 15 }; //Output-Pins Motor-Drehzahl { 16, 2, 13, 15 }
-const int MAXI_PORT_L_PWM[LAMP_QTY] = { 4, 2, 13, 15 };  //Output-Pins Lampe, werden hier über den selben Treiber angesteuert
-const int MAXI_PORT_IN[DAIN_QTY] = { 34, 35, 34, 35, 34, 35, 34, 35 };  //Input-Pins Digital/Analog   NUR 34 und 35 in Hardware     MOMENTAN NICHT VERWENDET
-
-const int PIN_M_INH = 27; //Output-Pin Einschalten Motortreiber
-const int PIN_L_INH = 27; //Output-Pin Einschalten Lampentreiber
+const int MAXI_PORT_M_PWM[MOTOR_QTY] = { 4, 2}; //, 13, 15 };                 // Output-Pins Motor-Drehzahl { 16, 2, 13, 15 }
+const int MAXI_PORT_IN[DAIN_QTY] = { 34, 35, 34, 35, 34, 35, 34, 35 };        // Input-Pins Digital/Analog   NUR 34 und 35 in Hardware     MOMENTAN NICHT VERWENDET
 
 const byte SX1509_PORT_DIO_PWMO[DIO_PWMO_QTY] = { 8, 9, 10, 11, 12, 13, 14, 15 };
-const byte SX1509_PORT_M_DIR[MOTOR_QTY] = { 0, 1, 2, 3 }; //Motor Richtung - Output am SX1509
+const byte SX1509_PORT_M_DIR[MOTOR_QTY] = { 0, 1};                            //, 2, 3 }; //Motor Richtung - Output am SX1509
 
 const byte SX1509_I2C_ADDRESS = 0x3E;    //wenn keine ADD-Jumper auf SX1509 aktiviert sind
 const byte SX1509_I2C_PIN_SDA = 21;
@@ -58,10 +59,10 @@ const byte SX1509_I2C_PIN_SCL = 22;
 
 extern SX1509 sx1509Object;        //i2c SDA = PIN 21, SCL = PIN 22
 
-//bool initExtension();
+/* ====================================================================================================================== */
 
-class CheckMaxiExtension
-{
+class CheckMaxiExtension {
+
 public:
 	/** default constructor, stores public SX1509_I2C_ADDRESS in mAddress
 	 *
@@ -88,8 +89,10 @@ private:
 	byte mAddress;
 };
 
-class Motor
-{
+/* ====================================================================================================================== */
+
+class Motor {
+
 public:
 	/** default constructor, resets all values to 0
 	 *
@@ -138,8 +141,10 @@ private:
 
 };
 
-class CServoMotor
-{
+/* ====================================================================================================================== */
+
+class CServoMotor {
+
 public:
 	CServoMotor();	//default constructor, puts servomotor into neutral position
 	CServoMotor(unsigned int motorNr, unsigned int dutyCycle = 50);	//contsructor, motor-Nr(0..3) - gives pin-nr for PWM, allows init of position - default is neutral, no pin override here
@@ -157,30 +162,103 @@ private:
 	unsigned int mLedcChannel;	//Servos get channels 4,5,6 (only for Mini-board)
 };
 
-class Lampe
-{
+/* ====================================================================================================================== */
+
+class Led {
+
 public:
-	Lampe();
-	Lampe(unsigned int);	//Konstruktor, Lampe-Nr (0..7), weist zu: Pin-Nr für PWM
-	void setValues(unsigned int);	//neue Lampenwerte setzen (Aktiv, Helligkeit)
-	void reRun();	//bei Aufruf werden erneut die Pins und PWM mit den Attributen gesetzt
+	Led();
+	Led(unsigned int ledNr);	//Konstruktor, Led-Nr (0..LAMP_QTY-1)
+	void setValues(int brightness, int ledColor);	// set LED values: brightness(0-255), color as value (0:off, 1: red, 2:green; 3:blue ...)
+	void reRun();	//bei Aufruf werden erneut die Pins gesetzt
 	void setMaxi(bool pMaxi);
+  void setLedRGBColorByIdentifier(int colorNumber, int brigthness);
+  String getRGBColorName();
+  
 private:
-	unsigned int mLampeNr;	//LampenNr 0..7, wird bei Erstellung des Objekts angelegt
-	unsigned int mPortNrPWM;	//Portnummer für PWM, wird bei Erstellung des Objekts zugewiesen
-	unsigned int mHelligkeit;	//aktuelle Helligkeit (von 0 bis 8)
+	unsigned int mLedNr;	//LednNr 0..7, wird bei Erstellung des Objekts angelegt	
+  int mBrightness; // brightness between 0 ... 255
+  int mColor; // siehe (0: red, 1:green; 2:blue ...)
+  int mColorRGB[3];
+  String mColorName;
 };
 
-class Encoder
-{
+void led_init();
+
+void led_clear();
+
+void led_reset(String &option, array<Led, LED_QTY> &ledArray);
+
+void led_update(array<Led, LED_QTY> &ledArray);
+
+void led_update(Led ledArray[]);
+
+/* ====================================================================================================================== */
+
+class Encoder {
 public:
 
+      Encoder();
+      void Encoder_reset();
+      void Encoder_M_1();
+      void Encoder_M_0();
+      void setCounter(int mMotorNr,int Counter_soll);
+      void setstart_flag_t();
+      void setstart_flag_f();
+      bool getstart_flag();
+      bool getflag(int mMotorNr);
+      int getCounter(int mMotorNr);
+      
 private:
+  int Counter_M[2];
+  int Counter_M_max[2];
+  bool finish_flag[2];
+  bool start_flag;
+  static Encoder* sEncoder;
+  static void ISR_Test_1();
+  static void ISR_Test_0();
 
 };
 
-class DigitalAnalogIn
-{
+class EncoderKreis {
+  public:
+
+    EncoderKreis();
+    void setstart(unsigned char pTurnRight, double circle);
+    void EncoderM_1();
+    void EncoderM_0();
+     
+  private:
+  static EncoderKreis* sEncoder;
+  double mcircle;
+  int mCounter;
+  bool finish_flag;
+  static void ISR_1();
+  static void ISR_0();
+  Motor mMotor_0;
+  Motor mMotor_1;
+  
+};
+
+/* ====================================================================================================================== */
+
+class CAngle {
+  public:
+    CAngle();      //aggregation: class CAngle can control Motor_0 and Motor_1 
+                                                                               
+    void setAngle();
+    void driveAngleRel(float pAngleRel, unsigned char pTurnRight);                                         //transfer parameter is the relative angle of the actual position, if pTurnRight is one --> CW, else if pTurnRight is cero --> CCW
+  private:
+    float mAngleAbs;
+    bool finish_flag;
+    Motor mMotor_0;
+    Motor mMotor_1;
+};
+
+/* ====================================================================================================================== */
+
+class DigitalAnalogIn {
+
 public:
 	DigitalAnalogIn();
 	DigitalAnalogIn(unsigned int);
@@ -194,25 +272,24 @@ private:
 	unsigned char currentPinMode;
 };
 
+/* ====================================================================================================================== */
 
-
-// Wird Momentan nicht genutzt:
+/* // Wird Momentan nicht genutzt:
 // Klasse um zusaetzliche IOs vom SX1509 zu nutzen
 // Stattdessen erfolgt eine Abänderung der Klasse "DigitalAnalogIn", die sie mit dem SX1509 kompatibel macht.
 
-//class DigitalIO_PWMout
-//{
-//public:
-//  DigitalIO_PWMout(); //Parameteterloser Ctor, kann nicht genutzt werden um funktionerende Instanz zu erstellen
-//  DigitalIO_PWMout(byte io, byte inOut); //io von 0-7, inOut-Constants von ARDUINO nutzen - als INPUT sollte INPUT_PULLUP verwendet werden (außer eine ander 3V3-Quelle wird verwendet)
-//  unsigned int getValue(); //liest Digitalen Input, gibt bei INPUT_PULLUP invertierten Wert zurück --> Pin durch Schalter an Masse --> Rückgabe: HIGH (setzt Pin zu erst auf direction = INPUT_PULLUP, falls dieser nicht schon INPUT_PULLUP ist)
-//  void setValueDig(bool val);         //setzt digitalen Output (setzt Pin zu erst auf direction = OUTPUT, falls dieser nicht schon OUTPUT ist)
-//  void setPWM(unsigned char pwmVal);      //setzt Pin auf PWM (Frequenz fest für A4990 eingestellt - in init zu sehen)
-//private:
-//  byte mIOPin;      //Pin am SX1509
-//  byte mIONumber;     //Nummer des IOs (0-7)
-//  byte mDirection;    //input oder output
-//};
-
+class DigitalIO_PWMout
+{
+public:
+  DigitalIO_PWMout(); //Parameteterloser Ctor, kann nicht genutzt werden um funktionerende Instanz zu erstellen
+  DigitalIO_PWMout(byte io, byte inOut); //io von 0-7, inOut-Constants von ARDUINO nutzen - als INPUT sollte INPUT_PULLUP verwendet werden (außer eine ander 3V3-Quelle wird verwendet)
+  unsigned int getValue(); //liest Digitalen Input, gibt bei INPUT_PULLUP invertierten Wert zurück --> Pin durch Schalter an Masse --> Rückgabe: HIGH (setzt Pin zu erst auf direction = INPUT_PULLUP, falls dieser nicht schon INPUT_PULLUP ist)
+  void setValueDig(bool val);         //setzt digitalen Output (setzt Pin zu erst auf direction = OUTPUT, falls dieser nicht schon OUTPUT ist)
+  void setPWM(unsigned char pwmVal);      //setzt Pin auf PWM (Frequenz fest für A4990 eingestellt - in init zu sehen)
+private:
+  byte mIOPin;      //Pin am SX1509
+  byte mIONumber;     //Nummer des IOs (0-7)
+  byte mDirection;    //input oder output
+};*/
 
 #endif
