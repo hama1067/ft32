@@ -60,7 +60,7 @@ SHM *ptrSHM;
 SW_queue mySW_queue;
 
 /* its highly recommended to change this key for every robot and make it NOT public! */
-char * secureCipherKey = "we8ogr78owt346troga";
+char * secureCipherKey = "abcdefghijklmnop";
 /* ********************************************************************************* */
 
 /* ********************************************* */
@@ -74,6 +74,9 @@ void setup() {
     Serial.begin(115200);											                    // serial communication
     ptrSHM = new SHM;                          		 			    	    // create shared memory
     SPIFFS.begin(true);                                           // initialize internal storage
+
+    /* disable loop watchdog, causes reboot errors while loading spiffs content over wifi */
+    disableLoopWDT();
     
     /* initialize system files and prepare to setup board parameters */
 

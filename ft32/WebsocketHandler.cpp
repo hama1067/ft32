@@ -106,7 +106,7 @@ void webSocketTask(void* params) {
               wsHandler->sendWebSocketMessageToClient(nClient, "received");
 
               if(ptrSHM->running != true) {
-                Serial.println("[ws] FT32 rebooting ...");
+                Serial.println("[ws] FT32 rebooting in 1 seconds...");
                 delay(1000);
                 ESP.restart();
               } else {
@@ -184,7 +184,8 @@ void eventListener(void* params) {
       last = true;
       current = true;
     }
-    //delay(10);
+    
+    delay(1);
     last = current;
   }
   vTaskDelete(NULL);
@@ -219,7 +220,7 @@ WebsocketHandler::WebsocketHandler(SHM *pSHM) {
 
   xTaskCreatePinnedToCore(
     eventListener,    /* Function to implement the task */
-    "",               /* Name of the task */
+    "ws-event",       /* Name of the task */
     4096,             /* Stack size in words */
     NULL,             /* Task input parameter */
     0,                /* Priority of the task */
@@ -344,7 +345,7 @@ void WebsocketHandler::handleWebSocketRequests() {
     //Serial.println("New client found");
     xTaskCreatePinnedToCore(
       webSocketTask,    /* Function to implement the task */
-      "",               /* Name of the task */
+      "ws-handle",      /* Name of the task */
       10000,            /* Stack size in words */
       (void*)client,    /* Task input parameter */
       0,                /* Priority of the task */

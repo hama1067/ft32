@@ -108,6 +108,14 @@ bool ConfigHandler::decipherNetworkConfigurationFile(String (& array) [2]) {
   array[0] = cipher.decryptString(cipheredSsid);
   array[1] = cipher.decryptString(cipheredPassword);
 
+  #ifdef CONFIGHANDLER_DEBUG
+    Serial.println("|cfg] config file content found:");
+    Serial.println("[cfg] -> ciphered ssid: " + cipheredSsid);
+    Serial.println("[cfg] -> ciphered password: " + cipheredPassword);
+    //Serial.println("[cfg] deciphered ssid: " + array[0]);
+    //Serial.println("[cfg] deciphered password: " + array[1]);
+  #endif
+
   return true;
 }
 
@@ -136,8 +144,20 @@ bool ConfigHandler::cipherNetworkConfigurationFile(String *configData) {
   #endif
 
   if( checkNetworkConfigurationFile() ) {
-    mSpiffsStorage.getSpiffs().writeFile(SPIFFS, "/wlanConfiguration.txt", cipheredConfig);
-    returnCondition = true;
+    int fileStatus = mSpiffsStorage.getSpiffs().writeFile(SPIFFS, "/wlanConfiguration.txt", cipheredConfig);
+
+    switch(fileStatus) {
+      case -1:
+        returnCondition = false;
+      break;
+      case 0:
+        returnCondition = true;
+      break;
+      case 1:
+        returnCondition = false;
+      break;
+    }
+
   } else {
     returnCondition = false;
   }

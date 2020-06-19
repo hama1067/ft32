@@ -91,7 +91,7 @@ String NetworkHandler::createUniqueAP() {
 bool NetworkHandler::joinExistingNetwork(const char *pSsid, const char *pPassword) {
   bool returnCondition = false;
   int counter = 0;
-  int connectionTries = 2;
+  int connectionTries = 5;
   int connectionTryCounter = 0;
 
   Serial.println("[nwh] Joining existing network ...");

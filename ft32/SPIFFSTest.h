@@ -11,7 +11,7 @@ public:
   void listDir(fs::FS &fs, const char * dirname, uint8_t levels);             //Anzeigen der Dateien auf dem SPIFFS
   bool fileExists(fs::FS &fs, const char * path);                             //Teste ob File existiert
   void readFile(fs::FS &fs, const char * path);                               //Lesen der Dateien auf dem SPIFFS
-  void writeFile(fs::FS &fs, const char * path, String message);              //Schreiben von Dateien auf dem SPIFFS
+  int writeFile(fs::FS &fs, const char * path, String message);              //Schreiben von Dateien auf dem SPIFFS
   void appendFile(fs::FS &fs, const char * path, String message);             //Anhängen von Dateiinhalten an ein bestehdens File im SPIFFS
   void renameFile(fs::FS &fs, const char * path1, const char * path2);        //Umbennen eines Files
   void deleteFile(fs::FS &fs, const char * path);                             //Löschen eines Files im SPIFFS
