@@ -8,26 +8,29 @@ If you want to checkout the current cody++ web IDE version 1.0, please visit the
 
 ## Installation
 
-Beside the hardware setup we also have to install several libraries to work with the arduino ide. After that we can go on with preparing the ESP32 so that Codypp will work out of the box from the internal storage.
+First of all, we have to install several libraries to work with the current hardware setup. After installing the latest Arduino IDE version, we have to add the ESP32 core to our arduino installation. Therefore, an additional board manager URL has to be added. You can now go on with integrating the ESP32 core to arduino. To do so, you have to open your Arduino IDE and navigate to ``File -> Preferences -> Additional Boards Manager URLs` and paste the [link]( https://dl.espressif.com/dl/package_esp32_index.json) given in the picture below into the input field.
 
-### Hardware and Arduino IDE setup
+<p align="center"><img width="65%" src="arduino-setup.png"></p>
 
-Before you can start, you have to install some dependencies und you need additional hardware. Beside the ESP32 micro controller as the main component, you will need:
+Confirm the window, go to ``Tools -> Board -> Boards Manager...``, search for esp32, and once again confirm the installation and wait until all neccessary files are downloaded and set up. Now we can install the additional libraries to work with our custom hardware ([ft32](http://www.hit-karlsruhe.de/hit-info/info-ss19/FT32-HWK2/0401AusgewaehlteLoesung.html), [eMalRob](http://hit-karlsruhe.de/hit-info/info-ws19/MalRob_Platine/0406Platinenlayout.html)).
 
-- [OLED](http://www.dx.com/p/0-96-128x64-i2c-interface-blue-color-oled-display-module-board-for-arduino-419232) Display
-- [Motor](https://www.pololu.com/product/2137) driver
+<p align="center"><img width="65%" src="ft32-robot.png"></p>
 
-Please make sure you have connected all components correctly as it is mentioned on this [documentation page](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik/0404Portbelegungsplan.html).
+<p align="center"><img width="65%" src="eMalRob.jpg"></p>
 
-Now you have to flash the ESP32 with the C++ software. Therefore you have to open the ft32.ino file from our github repository in the Arduino IDE (make sure you have setup up your [Arduino Environment](https://github.com/espressif/arduino-esp32) correctly), compile the source code and after that you have o flash the micro controller.
+To get this done, open the menu entry under ``Tools -> Manage Libraries...`` and search for the following libraries and install them one by one:
 
-Make sure you have installed the following arduino libraries via the internal arduino packet manager:
-
+- Adafruit BNO055 (latest version, tested with 1.1.11)
+- Adafruit GFX Library (latest version, tested with 1.3.6)
+- Adafruit NeoPixel (latest version, tested with 1.2.4)
 - Adafruit SSD1306 (latest version, tested with 1.2.9)
-- Adafruit-GFX-Library (latest version, tested with 1.3.4)
-- SparkFun SX1509 (latest version, tested with 2.0.1)
+- Adafruit Unified Sensor (latest version, tested with 1.1.2)
+- ESP32 AnalogWrite (tested with 0.1.0)
+- ESP8266 and ESP32 OLED driver for SSD1306 displays (tested with 4.1.0)
+- SX1509 IO Expander (latest version, tested with 2.0.1)
 
-Now you can go on with writing the necessary web files into the flash memory (called SPIFFS) of the ESP32. It might be difficult, but we have created a tutorial to make it as easy as possible.
+Now you have to flash the ESP32 with the C++ software. Therefore you have to open the ft32.ino file from our github repository , compile the source code and after that you have to flash the micro controller.
+After successfully flashing the ESP32 micro controller, you can go on with writing the necessary web files into the flash memory (called ``SPIFFS``) of the ESP32. It might be difficult, but we have created a tutorial to make it as easy as possible.
 
 ### Writing files to SPIFFS Memory
 
@@ -51,14 +54,26 @@ Make sure the ESP32 is connected correctly to your computer and no Arduino conso
 
 For further information to this project visit our official documentation [webpage](http://hit-karlsruhe.de/hit-info/info-ws17/Fischertechnik/).
 
-<p align="center"><img width="35%" src="./FT32-robot.jpg"></p>
+## Cody++ (with FT32 robots) in use
 
-## FT32 Robots and Cody++ in use
+Video dokumentation (in german): 
 
-Video dokumentation (in german):
-- [FT32-Codypp Pre-relase Video Dez. 2017](https://youtu.be/Vb2udfsyRjI?list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw)
+<p align="center" >
+  <a href="http://www.youtube.com/watch?v=Vb2udfsyRjI" target="_blank" >
+    <img width="50%" src="https://img.youtube.com/vi/Vb2udfsyRjI/0.jpg" alt="https://img.youtube.com/vi/Vb2udfsyRjI/0.jpg" title="FT32-Codypp Pre-relase Video Dez. 2017" >
+  </a>
+</p>
 
-German pubils testing our Robots:
-- [Hector-Seminar-Video](https://www.youtube.com/watch?v=EfkDjtZDj-Y&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=2)
-- [Drawing a flower with Codypp and FT32](https://www.youtube.com/watch?v=YJIpydJqEwY&list=PLPAfNH8UB9_noRanNCsG2tC-wpglnxcxw&index=8)
-- [Drawing a clef with Codypp and FT32](https://www.youtube.com/watch?v=8gbNc6OlCrc)
+German pubils testing our Robots: 
+
+<p align="center" >
+  <a href="http://www.youtube.com/watch?v=EfkDjtZDj-Y" target="_blank" >
+    <img width="50%" src="https://img.youtube.com/vi/EfkDjtZDj-Y/0.jpg" alt="https://img.youtube.com/vi/EfkDjtZDj-Y/0.jpg" title="Hector-Seminar-Video" >
+  </a>
+</p>
+
+<p align="center" >
+  <a href="http://www.youtube.com/watch?v=YJIpydJqEwY" target="_blank" >
+    <img width="50%" src="https://img.youtube.com/vi/YJIpydJqEwY/0.jpg" alt="https://img.youtube.com/vi/YJIpydJqEwY/0.jpg" title="Drawing a flower with Codypp and FT32" >
+  </a>
+</p>
