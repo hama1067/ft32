@@ -357,10 +357,8 @@ void SW_queue::queueWorker(SHM* mSHM)
   for (int i = 0; i < mLedArray.size(); i++)  //Am Ende des Programms zuruecksetzen der Ausgaenge auf 0
   {
     mLedArray[i].setValues(0,0);
+    led_update(mLedArray);
   }
-
-  led_strip->clear();
-  led_strip->show();
 
 	mServoArray[0].setValues(100);
 

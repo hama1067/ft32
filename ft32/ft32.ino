@@ -2,9 +2,9 @@
  * ft32.ino
  *
  *  Created on: Mar 04, 2019
- *      modified on: Apr 17, 2020
+ *      modified on: Aug 05, 2020
  *      Author: joseph
- *      version: v1.2.1 alpha
+ *      version: v1.2.2 alpha
  *      current stable release: v1.2 beta (1.2)
  *  
  *  description:
@@ -137,8 +137,6 @@ void setup() {
     if( !connectToSavedWlan ) {
 		  nHandler.createUniqueAP(); // -> Creating unique access point "FT-CODY-*"
     }
-    
-	  cOledHandler::getInstance()->printConnectionStatus(nHandler.getIP(), nHandler.getSsid(), nHandler.getMode());
 
     /* creating AssetHandler (required for providing local codypp version from SPIFFS */
     /* creating WebsocketHandler to handle incomming websocket connections */
@@ -155,6 +153,9 @@ void setup() {
     Serial.println("[main] => System is up and running.");
     Serial.println("[main] release version: r-" + String(RELEASE_VERSION));
     Serial.println("[main] selected roboter model: " + String(ROBOTER_VERSION == 0 ? "FT32": "eMalRob"));
+
+    /* print connection status */
+    cOledHandler::getInstance()->printConnectionStatus(nHandler.getIP(), nHandler.getSsid(), nHandler.getMode());
 }
 
 void loop() {
