@@ -7,8 +7,7 @@ extern SHM* ptrSHM;
 extern SW_queue mySW_queue;
 extern NetworkHandler nHandler;
 
-void initQueue_static(void* arg)
-{
+void initQueue_static(void* arg) {
 	SHM *pSHM = (SHM*)arg;	//casting arguments in SHM-Pointer
 
 	//Wait forever for flag (commonStart), execute queue and start waiting again
@@ -24,19 +23,22 @@ void initQueue_static(void* arg)
 	vTaskDelete(NULL);
 }
 
-SW_queue::SW_queue()
-{
+SW_queue::SW_queue() {
   //anlegen aller IO-Objekte (Schnittstelle zur Hardware)
   Serial.println("[Q] IO-Objekte anlegen...");
 
-  for (unsigned int i = 0; i < mMotorArray.size(); i++)	//4 Motoren anlegen (Standardkonstruktor)
-  {
+  for (unsigned int i = 0; i < mMotorArray.size(); i++)	{ //2 Motoren anlegen (Standardkonstruktor)
     mMotorArray[i] = Motor(i);	//Motor mit "richtigem" Konstruktor erzeugen, in Array speichern
   }
-  for (unsigned int i = 0; i < mLampeArray.size(); i++)
-  {
-    mLampeArray[i] = Lampe(i);
+
+  led_init();
+  
+  for (unsigned int i = 0; i < mLedArray.size(); i++) {
+    mLedArray[i] = Led(i);
   }
+
+  led_clear();
+  
   for (unsigned int i = 0; i < mServoArray.size(); i++)
   {
     mServoArray[i] = CServoMotor(i, 100);
@@ -60,16 +62,15 @@ SW_queue::SW_queue()
   cycleTime = 5;
 }
 
-void SW_queue::setBoardType(bool pMaxi)
-{
+void SW_queue::setBoardType(bool pMaxi) {
   Serial.println("[io] adjusting IO-Objects ...");
   for (unsigned int i = 0; i < mMotorArray.size(); i++) //4 Motoren anlegen (Standardkonstruktor)
   {
     mMotorArray[i].setMaxi(pMaxi);
   }
-  for (unsigned int i = 0; i < mLampeArray.size(); i++)
+  for (unsigned int i = 0; i < mLedArray.size(); i++)
   {
-    mLampeArray[i].setMaxi(pMaxi);
+    mLedArray[i].setMaxi(pMaxi);
   }
   for (unsigned int i = 0; i < mServoArray.size(); i++)
   {
@@ -82,14 +83,12 @@ void SW_queue::setBoardType(bool pMaxi)
   Serial.println("[io] IO-Objects adjusted.\n");
 }
 
-SW_queue::~SW_queue()
-{
+SW_queue::~SW_queue() {
   delete startPtr;
   delete endPtr;
 }
 
-void SW_queue::startQueueTask(SHM* ptrSHM)
-{
+void SW_queue::startQueueTask(SHM* ptrSHM) {
 	xTaskCreatePinnedToCore(
 		initQueue_static,					// Function to implement the task
 		"initQueue_static", 				// Name of the task
@@ -100,11 +99,9 @@ void SW_queue::startQueueTask(SHM* ptrSHM)
 		1);  								// Core where the task should run
 }
 
-void SW_queue::SW_work(SHM* mSHM)
-{
+void SW_queue::SW_work(SHM* mSHM) {
   mSHM->running = true;  //über SHM der HMI Bescheid geben, dass das Programm läuft
-  Serial.print("[Q] QUEUE common start ");
-  Serial.println(mSHM->commonStart);
+  Serial.println("[Q] QUEUE common start" + String(mSHM->commonStart));
 
   cOledHandler::getInstance()->printOledMessage("Loading...");
   delay(1000);
@@ -167,7 +164,7 @@ void SW_queue::SW_work(SHM* mSHM)
   cOledHandler::getInstance()->printOledMessage("Running...");
   if (!qCreateError)	//Wenn kein Fehler beim Erstellen der Queue
   {
-	  queueWorker(mSHM);  //Uebergabe von: StartPtr, EndPtr, MotorArray, LampenArray, InputArray, Gemeinsamer Speicher
+	  queueWorker(mSHM);  //Uebergabe von: StartPtr, EndPtr, MotorArray, LednArray, InputArray, Gemeinsamer Speicher
   }
   
   //print any errors that occurred on creating the queue or on runtime
@@ -193,9 +190,16 @@ void SW_queue::SW_work(SHM* mSHM)
   for (int i = 0; i < MOTOR_QTY; i++)
   {
 	  mSHM->motorVal[i] = 0;
-	  mSHM->lampVal[i] = 0;
+	  mSHM->ledVal[i] = 0;
   }
+
+  for (int i = 0; i < LED_QTY; i++)
+  {
+    mSHM->ledVal[i] = 0;
+  }
+  
   mSHM->servoVal[0] = 0;
+  
   for (int i = 0; i < DAIN_QTY; i++)
   {
 	  mSHM->digitalVal[i] = 0;
@@ -214,8 +218,7 @@ void SW_queue::SW_work(SHM* mSHM)
 
 }
 
-void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
-{
+void SW_queue::queueDelete() { //commonElement*& startPtr, commonElement*& endPtr)	//method to delete the queue
 	Serial.println("[Q] Queue loeschen...");
 	commonElement* workPtr = startPtr->nextElement;
 	while (workPtr != endPtr)
@@ -226,8 +229,7 @@ void SW_queue::queueDelete()//commonElement*& startPtr, commonElement*& endPtr)	
 	Serial.println("[Q] Queue geloescht...\n");
 }
 
-int SW_queue::stoi_ft(String& uestring, int& strCounter)
-{
+int SW_queue::stoi_ft(String& uestring, int& strCounter) {
 	String blockstr = "";	//stores number-to-read as string
 	if (strCounter < uestring.length() && isDigit(uestring.charAt(strCounter)))	//check if first char is valid
 	{
@@ -245,8 +247,7 @@ int SW_queue::stoi_ft(String& uestring, int& strCounter)
 	return blockstr.toInt();	//convert number-string to integer, return value
 }
 
-void SW_queue::checkChar(int& strCounter, char zeichen)
-{
+void SW_queue::checkChar(int& strCounter, char zeichen) {
 	if (!qCreateError)
 	{
 		if (uebergabestr.charAt(strCounter) != zeichen)	//auf Zeichen pruefen
@@ -273,8 +274,7 @@ void SW_queue::checkChar(int& strCounter, char zeichen)
 	}
 }
 
-void SW_queue::printErrors()
-{
+void SW_queue::printErrors() {
 	Serial.print("[Q creator] qCreateErrorID = " + String(qCreateErrorID) + ": ");
 	switch (qCreateErrorID)
 	{
@@ -323,4 +323,47 @@ void SW_queue::printErrors()
 		Serial.println("Unbekannter Fehler, qWorkErrorID: " + qWorkErrorID);
 		break;
 	}
+}
+
+/*
+ * pass transmitted SHM content block identifier as string to enum value for switch case in queueCreator/queueWorker
+ */
+queueElementID SW_queue::getQueueElementID(String strID) {
+  queueElementID elmID = UNKNOWN_ID;
+  
+  if(strID == "M") {
+    elmID = MOTOR;
+  } else if(strID == "EN") {
+    elmID = ENCODER; 
+  } else if(strID == "L") {
+    elmID = LED;
+  } else if(strID == "LR") {
+    elmID = LED_RESET;
+  } else if(strID == "N") {
+    elmID = SERVO;
+  } else if(strID == "R") {
+    elmID = ROTATE;
+  } else if(strID == "C") {
+    elmID = CIRCLE;
+  } else if(strID == "D") {
+    elmID = INPUT_DIGITAL;
+  } else if(strID == "A") {
+    elmID = INPUT_ANALOG;
+  } else if(strID == "S") {
+    elmID = SLEEP;
+  } else if(strID == "I") {
+    elmID = IF;
+  } else if(strID == "E") {
+    elmID = ELSE;
+  } else if(strID == "J") {
+    elmID = ENDIF;
+  } else if(strID == "W") {
+    elmID = WHILE;
+  } else if(strID == "X") {
+    elmID = ENDWHILE;
+  } else {
+    elmID = UNKNOWN_ID;
+  }
+
+  return elmID;
 }

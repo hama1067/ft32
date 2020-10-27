@@ -17,7 +17,7 @@ struct SHM
 	unsigned int digitalVal[8] = { 0 };	// Queue: RW, Web: R
 	unsigned int analogVal[8] = { 0 };	// Queue: RW, Web: R
 	int motorVal[4] = { 0 };	// Queue: RW, Web: R
-	unsigned int lampVal[4] = { 0 };	// Queue: RW, Web: R
+	unsigned int ledVal[11] = { 0 };	// Queue: RW, Web: R
 	unsigned int servoVal[1] = { 0 };	// Queue: RW, Web: R
 	bool running = false;				// Queue: RW, Web: R
 

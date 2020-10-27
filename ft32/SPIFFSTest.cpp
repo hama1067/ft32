@@ -42,8 +42,10 @@ bool CSPIFFS::fileExists(fs::FS &fs, const char * path) {
   File file = fs.open(path);
   if (!(file && !file.isDirectory())) {
     //Serial.println("Failed to open file.");
+    file.close();
     return false;
   } else {
+    file.close();
     return true;
   }
 }
@@ -61,21 +63,29 @@ void CSPIFFS::readFile(fs::FS &fs, const char * path) {
 	while (file.available()) {
 		Serial.write(file.read());
 	}
+
+  file.close();
 }
 
-void CSPIFFS::writeFile(fs::FS &fs, const char * path, String message){
+int CSPIFFS::writeFile(fs::FS &fs, const char * path, String message){
     Serial.printf("[spiffs] Writing file: %s\n", path);
+    int fileStatus = 0;
 
     File file = fs.open(path, FILE_WRITE);
     if(!file){
         Serial.println("Failed to open file for writing");
-        return;
+        fileStatus = -1;
     }
     if(file.print(message)){
         Serial.println("[spiffs] File written");
+        fileStatus = 0;
     } else {
         Serial.println("[spiffs] Write failed");
+        fileStatus = 1;
     }
+
+    file.close();
+    return fileStatus;
 }
 
 void CSPIFFS::appendFile(fs::FS &fs, const char * path, String message){
@@ -91,6 +101,8 @@ void CSPIFFS::appendFile(fs::FS &fs, const char * path, String message){
     } else {
         Serial.println("Append failed");
     }
+
+    file.close();
 }
 
 void CSPIFFS::renameFile(fs::FS &fs, const char * path1, const char * path2){
@@ -161,6 +173,7 @@ String CSPIFFS::getFile(fs::FS &fs, const char * path) {
     output += (char)file.read();
   }
 
+  file.close();
   return output;
 }
 
@@ -184,6 +197,8 @@ void CSPIFFS::printFileToClient(fs::FS &fs, const char * path, WiFiClient mClien
   }
   buffer[(file.size()%BUFF_SIZE)+file.size()/BUFF_SIZE]='\0';
   mClient.print(buffer);
+
+  file.close();
 }
 
 void CSPIFFS::printFileToClient2(fs::FS &fs, const char * path, WiFiClient *mClient) {
@@ -241,9 +256,14 @@ void CSPIFFS::printFileToClient2(fs::FS &fs, const char * path, WiFiClient *mCli
   }
   
   mClient->print(buffer);
+
+  file.close();
 }
 
 int CSPIFFS::getFileSize(fs::FS &fs, const char * path) {
   File file = fs.open(path);
-  return file.size();
+  int fileSize = file.size();
+  file.close();
+  
+  return fileSize;
 }
