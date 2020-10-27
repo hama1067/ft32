@@ -3,7 +3,7 @@
  * Autor: Johannes Marquart
  * 
  * modified by: F.J.P
- * date: 2020-04-17
+ * date: 2020-10-27
  */
 
 #include "ft_ESP32_IOobjects.h"
@@ -175,10 +175,11 @@ void Motor::setValues(unsigned char directionMode, unsigned int drehzahl) {
   int drehzahl_pwm;
   if (mDrehzahl < 1) {
     drehzahl_pwm = 0;                         //170
-  } else if (mDrehzahl >7) {
+  } else if (mDrehzahl > 49) {
     drehzahl_pwm = 255;
   } else {
-    drehzahl_pwm = 170 + mDrehzahl * 85 / 8;         //170+mDrehzahl*85/8
+    drehzahl_pwm = 170 + mDrehzahl * (85 / 50);         //170+mDrehzahl*85/8
+    Serial.println("Drehzahl PWM: " + (String)drehzahl_pwm);
   }
 
   //Zuweisen der Richtung an den richtigen Pin entsprechend der Motornr.
