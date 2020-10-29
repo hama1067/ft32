@@ -1,0 +1,90 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <variables></variables>
+  <block type="start" id="sexaF8/NOSGB],{)z[Rw" x="89" y="266">
+    <statement name="state">
+      <block type="controls_repeat_extGer" id="os~GD]R8}LrqWfW(8~V/">
+        <value name="TIMES">
+          <block type="math_number" id="SaG{lIrVh$u2tENx#gA3">
+            <field name="NUM">2</field>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="motorGer" id="bCkz]EXLSQY,T]5y,rRH">
+            <field name="motorNumber">0</field>
+            <field name="motorDirection">1</field>
+            <field name="motorSpeed">8</field>
+            <next>
+              <block type="motorGer" id="ajSkJ,~0xX*U9PwGqE0s">
+                <field name="motorNumber">1</field>
+                <field name="motorDirection">1</field>
+                <field name="motorSpeed">8</field>
+                <next>
+                  <block type="waitGer" id="AtONN,oIggqebg=v)16m">
+                    <field name="seconds">1</field>
+                    <next>
+                      <block type="motorGer" id="dM69?3R;mk#:8YS+)!@w">
+                        <field name="motorNumber">0</field>
+                        <field name="motorDirection">1</field>
+                        <field name="motorSpeed">0</field>
+                        <next>
+                          <block type="motorGer" id="Ov)}%46LaOE@;^)k-OS7">
+                            <field name="motorNumber">1</field>
+                            <field name="motorDirection">1</field>
+                            <field name="motorSpeed">0</field>
+                            <next>
+                              <block type="waitGer" id=",ej/M2+JO0d=Gd2DPU?L">
+                                <field name="seconds">1</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <next>
+          <block type="controls_repeat_extGer" id="KV#1%U7hmN|[@MKr3w~7">
+            <value name="TIMES">
+              <block type="math_number" id=".CKY!0$DaTp$Y#}[y.H.">
+                <field name="NUM">2</field>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="motorGer" id="1xX3UFUe:U,g?$hz^HT-">
+                <field name="motorNumber">0</field>
+                <field name="motorDirection">1</field>
+                <field name="motorSpeed">8</field>
+                <next>
+                  <block type="motorGer" id="nOSxyI8Iv{|sqi!7fWV@">
+                    <field name="motorNumber">1</field>
+                    <field name="motorDirection">1</field>
+                    <field name="motorSpeed">8</field>
+                    <next>
+                      <block type="waitGer" id="5.$?xb;lQngyyNC}ZqRY">
+                        <field name="seconds">1</field>
+                        <next>
+                          <block type="stop_motorsGer" id="nHT=)W9;s~3v0R17H5.#">
+                            <field name="option">option_all</field>
+                            <next>
+                              <block type="waitGer" id="n,k9*UnbO3HRdMa](8RL">
+                                <field name="seconds">1</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>
