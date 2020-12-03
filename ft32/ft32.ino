@@ -19,7 +19,7 @@
  *  set the current version number; should be equal to the current stable release
  *  number from github or above if its not a test version. 
  */
-#define RELEASE_VERSION "1.2.1"
+#define RELEASE_VERSION "1.2.2"
 
 /*  
  *   specify the type of roboter we want to use

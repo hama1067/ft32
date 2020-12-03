@@ -1,11 +1,13 @@
-//#include "ft_ESP32_queueWorker.h"
 #include "ft_ESP32_SW_Queue.h"
-//#include <Adafruit_SSD1306.h>
-//extern Adafruit_SSD1306 display;
 #include "OledHandler.h"
 #include <time.h>
 
+/**/
 extern Adafruit_NeoPixel * led_strip;
+
+/**/
+extern int encPosAbs0;
+extern int encPosAbs1;
 
 void SW_queue::queueWorker(SHM* mSHM)
 {	
@@ -26,26 +28,63 @@ void SW_queue::queueWorker(SHM* mSHM)
 			mMotorArray.at(workPtr->portNr).setValues(workPtr->compare_direction, workPtr->val_pwm_timems_loop);	//Motordaten.set, Ausgangspins werden gesetzt
 			mSHM->motorVal[workPtr->portNr] = (1 == workPtr->compare_direction ? workPtr->val_pwm_timems_loop : -workPtr->val_pwm_timems_loop);
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
 			break;
     case ENCODER:  // Encoder
+      {
+        /* TODO: Encodersteuerung: Fahren einer vorgegebenen Strecke, Interrupts und Motoren starten */
+        mEncoderStrecke.enableInterrupts();
+        mEncoderStrecke.enableMotors();
+        bool ende = false;
+  
+        // Schleife ausführen, bis Sollposition erreicht
+        while(!ende) {
+          // Reglerfunktion aufrufen, Sollposition und Drehrichtung übergeben
+          ende = mEncoderStrecke.reglerStrecke(workPtr->val_distance_m0, workPtr->compare_direction);
+  
+          // Ausgabe auf seriellen Monitor
+          Serial.print(encPosAbs0);
+          Serial.print(" | ");
+          Serial.println(encPosAbs1);
+  
+          // Ausgabe auf OLED-Display
+          /*String str = "Pos 0: ";
+          str.concat(encPosAbs0);
+          str.concat("\nPos 1: ");
+          str.concat(encPosAbs1);
+          cOledHandler::getInstance()->printOledMessage(str);*/
+          delay(10);
+        }
+  
+        // Motoren und Encoder stoppen
+        mEncoderStrecke.disableMotors();
+        mEncoderStrecke.disableInterrupts();
+  
+        // Nächstes Element in der Queue starten
+        workPtr = workPtr->nextElement; 
+      }
+      break;
+    case ROTATE: //
+      /**/
 
       break;
 		case LED:
 			mLedArray.at((workPtr->multi_digit_identifier).toInt()).setValues((workPtr->multi_digit_value).toInt(), workPtr->val_pwm_timems_loop); //Leddaten.set -> sollte sofort ausgefuehrt werden
 			mSHM->ledVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
 			break;
     case LED_RESET:
       led_reset(workPtr->multi_digit_identifier, mLedArray);
       workPtr = workPtr->nextElement;  //Zeiger auf naechstes QE legen
+      
       break;
 		case SERVO:
 			mServoArray.at(workPtr->portNr).setValues(workPtr->val_pwm_timems_loop); //Servo.set -> sollte sofort ausgefuehrt werden
 			mSHM->servoVal[workPtr->portNr] = workPtr->val_pwm_timems_loop;
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
 			break;
-
-      
 		case INPUT_DIGITAL:	//Handling der Digitalen Anschluesse
 			if (workPtr->type == 'O')	//Digitalen Ausgang setzen
 			{
@@ -64,6 +103,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 				//Ende Display
 			}
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
 			break;
 		case INPUT_ANALOG:	//wird von der HMI noch nicht verwendet
 			mSHM->analogVal[workPtr->portNr] = mDAIn.at(workPtr->portNr).getValueAnalog()/32;	//Wert in Container schreiben, 12Bit-Wert auf 7Bit-Wert skalieren (Beschraenkung wegen HMI)
@@ -76,6 +116,8 @@ void SW_queue::queueWorker(SHM* mSHM)
 			*/
 			//Ende Display
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
+      break;
 		case SLEEP:
 			waitTime = workPtr->time_s * 1000;	//Sekunden in warten [ms] speichern
 			waitTime += workPtr->val_pwm_timems_loop * 10;	//Millisekunden in warten [ms] speichern
@@ -83,6 +125,7 @@ void SW_queue::queueWorker(SHM* mSHM)
 			Serial.print(waitTime);
 			Serial.println(" ms");
 			workPtr = workPtr->nextElement;	//Zeiger auf naechstes QE legen
+     
 			break;
 		case IF:
 			if (workPtr->type == 'D')	//Digitalen Eingang abfragen
@@ -170,12 +213,15 @@ void SW_queue::queueWorker(SHM* mSHM)
 					break;
 				}
 			}
+     
 			break;
 		case ELSE:	//Else
 			workPtr = workPtr->jumpElement->nextElement;	//nach If-Pfad wird Else-Pfad uebersprungen. Zeiger auf eins nach zugehoerigem Endif legen
+      
 			break;
 		case ENDIF:	//Endif
 			workPtr = workPtr->nextElement;	//hier passiert nix, Endif wird uebersprungen
+     
 			break;
 		case WHILE:
 			if (workPtr->type == 'Z')
@@ -260,12 +306,15 @@ void SW_queue::queueWorker(SHM* mSHM)
 					break;
 				}
 			}
+     
 			break;
 		case ENDWHILE:	//EndWhile
 			Serial.println("[QW] Wiederhole Schleife");
 			workPtr = workPtr->jumpElement;	//Springt zurueck zu While und dortiger Pruefung
+      
 			break;
 		default:
+    
 			break;
 		}
 		
