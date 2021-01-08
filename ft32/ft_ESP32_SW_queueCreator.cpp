@@ -47,9 +47,52 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			ustrPos++;	//Zaehler auf Komma legen
 			checkChar(ustrPos, ',');	//auf Komma pruefen
 			ustrPos++;	//Zaehler auf Drehzahl legen
-			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Drehzahl (0..8, vgl. RoboPro)
+			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//Drehzahl (0..50)
+     
 			break;
     case ENCODER:  // Encoder
+      /* TODO: create encoder data from queue string */
+
+      /* not used? */
+      createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';  //Port-Nummer eintragen
+      
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* used */
+      ustrPos++;  //Zaehler auf Richtung legen
+      createPtr->compare_direction = uebergabestr.charAt(ustrPos) - '0';  //Richtung
+      
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* not used? */
+      ustrPos++;  //Zaehler auf Drehzahl legen
+      createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);  //Drehzahl (0..8, vgl. RoboPro)
+      
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* used */
+      ustrPos++; ////Zaehler auf Distanz legen
+      createPtr->val_distance_m0 = stoi_ft(uebergabestr, ustrPos);
+
+      /* ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++; ////Zaehler auf Port-Nr legen
+      createPtr->portNr1 = uebergabestr.charAt(ustrPos) - '0';  //Port-Nummer eintragen
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++;  //Zaehler auf Richtung legen
+      createPtr->compare_direction1 = uebergabestr.charAt(ustrPos) - '0';  //Richtung
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++;  //Zaehler auf Drehzahl legen
+      createPtr->val_pwm_timems_loop1 = stoi_ft(uebergabestr, ustrPos);  //Drehzahl (0..8, vgl. RoboPro)
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++; ////Zaehler auf Distanz legen
+      createPtr->val_distance_m1 = stoi_ft(uebergabestr, ustrPos);*/
 
       break;
 		case LED:	// LED strip pixel
@@ -73,6 +116,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 
       ustrPos++;  //Zaehler auf  legen
       createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);  //XX
+      
 			break;
     case LED_RESET:  // reset LED strip pixel
       while(uebergabestr.charAt(ustrPos) != ';') {
@@ -87,6 +131,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
       tmpMode = "";
 
       ustrPos--;
+      
       break;
 		case SERVO:	// Servo Motor
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer eintragen
@@ -94,9 +139,15 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			checkChar(ustrPos, ',');	//auf Komma pruefen
 			ustrPos++;	//Zaehler auf Position legen
 			createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);	//relative Servoposition (%) auslesen, Zaehler auf letzte Ziffer legen
+      
 			break;
     case ROTATE:  // rotate around itself by an angle
-
+      createPtr->compare_direction = uebergabestr.charAt(ustrPos) - '0';  //Richtung
+      ustrPos++;  //Zaehler auf Komma legen
+      checkChar(ustrPos, ',');  //auf Komma pruefen
+      ustrPos++;  //Zaehler auf Winkel legen
+      createPtr->val_angle = stoi_ft(uebergabestr, ustrPos);
+      
       break;
     case CIRCLE:  // rotate around one wheel multiple times
 
@@ -118,9 +169,11 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			{
 				createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
 			}
+     
 			break;
 		case INPUT_ANALOG:	//Input Analog
 			createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';	//Port-Nummer
+     
 			break;
 		case SLEEP:	//Warten
 			createPtr->time_s = stoi_ft(uebergabestr, ustrPos);	//read seconds, counter on last digit
@@ -141,6 +194,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				}
 				createPtr->val_pwm_timems_loop = _tempTimems;	//store millisecs to queue
 			}
+     
 			break;
 		case IF:	//If
 			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Pruefung) eingtragen
@@ -160,6 +214,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			checkChar(ustrPos, ',');	//auf Komma pruefen
 			ustrPos++;	//Zaehler auf If-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
+     
 			break;
 		case ELSE:	//Else
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
@@ -182,6 +237,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				qCreateError = true;
 				qCreateErrorID = 5; //Fehler, kein passendes If gefunden
 			}
+     
 			break;
 		case ENDIF:	//EndIf
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//If-ID
@@ -204,6 +260,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				qCreateError = true;
 				qCreateErrorID = 6; //Fehler, kein passendes If oder Else gefunden
 			}
+     
 			break;
 		case WHILE:	//While
 			createPtr->type = uebergabestr.charAt(ustrPos);	//Art (D/A-Pruefung oder Z-Zaehlschleife) eintragen
@@ -226,6 +283,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			checkChar(ustrPos, ',');	//auf Komma pruefen
 			ustrPos++;	//Zaehler auf While-ID legen
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
+      
 			break;
 		case ENDWHILE:	//EndWhile
 			createPtr->rootID = uebergabestr.charAt(ustrPos);	//While-ID
@@ -249,10 +307,12 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 				qCreateError = true;
 				qCreateErrorID = 7; //Fehler, kein passendes While gefunden
 			}
+     
 			break;
 		default:
 			qCreateError = true;
 			qCreateErrorID = 8;	//Fehler, falscher Identifier
+     
 			break;
 		}
 

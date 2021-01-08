@@ -445,7 +445,356 @@ String Led::getRGBColorName() {
 
 /* ====================================================================================================================== */
 
+// ===== ENCODERSTEUERUNG
+// Für ISR müssen einige Elemente global definiert werden:
+// Interrupt-Service-Routinen ==> Hochzählen der Encoder-Zähler
+// Folgende Variablen müssen (leider) in der c++-Datei deklariert werden.
+// Andernfalls kommt es zu include-Fehlern.
+// Die Absolut-Encoderzähler werden zur Bestimmung der Reglerabweichung verwendet
+// und zur Erkennung, ob der Roboter die gewünschte Strecke gefahren ist.
+int encPosAbs0;
+int encPosAbs1;
+// Variablen zur Entprellung der Lichtschrankensignale
+int64_t time_ISREnc0[2];
+int64_t time_ISREnc1[2];
 
+// Interrupt-Service-Routinen zur Flankenzählung der Encoder
+void ISREnc0() {
+    // Entprellen: Prüfen, ob seit letztem Schritt mind. 5ms vergangen sind
+    time_ISREnc0[0] = esp_timer_get_time();
+    if(time_ISREnc0[0] - time_ISREnc0[1] > 2000) {
+    // Zähler inkrementieren und Zeit speichern
+      encPosAbs0++;
+      time_ISREnc0[1] = time_ISREnc0[0];
+    }
+}
+void ISREnc1() {
+    // Entprellen: Prüfen, ob seit letztem Schritt mind. 5ms vergangen sind
+    time_ISREnc1[0] = esp_timer_get_time();
+    if(time_ISREnc1[0] - time_ISREnc1[1] > 2000) {
+    // Zähler inkrementieren und Zeit speichern
+      encPosAbs1++;
+      time_ISREnc1[1] = time_ISREnc1[0];
+    }
+}
+
+// Konstruktor
+CEncoderStrecke::CEncoderStrecke() {}
+
+// Beide Encoder aktivieren ==> Impulse werden gezählt
+// Zusätzlich alle erforderlichen Variablen zurücksetzen
+void CEncoderStrecke::enableInterrupts() {
+    // Variablen zurücksetzen
+    // Encoder-Zähler und Entprell-Zeiten zurücksetzen
+    encPosAbs0 = 0;
+    encPosAbs1 = 0;
+    time_ISREnc0[1] = 0;
+    time_ISREnc1[1] = 0;    
+
+    // Abtastzeit für den Regler zurücksetzen
+    time_ReglerInt[0] = esp_timer_get_time();
+
+    // Reglervariablen zurücksetzen
+    integrierer = 0;
+    RegAbweichung[0] = 0;
+    RegStellgr[0] = 0;
+    RegStellgr[1] = 0;
+    diff[0] = 0;
+
+    // Encoderpins konfigurieren, Interrupts hinzufügen
+    pinMode(PIN_ENCODER_0, INPUT);
+    pinMode(PIN_ENCODER_1, INPUT);
+
+    attachInterrupt(PIN_ENCODER_0, ISREnc0, RISING);
+    attachInterrupt(PIN_ENCODER_1, ISREnc1, RISING);
+
+    Serial.println("Beide Encoder aktiv");
+}
+
+// Beide Encoder deaktivieren ==> es werden keine weiteren Impulse gezählt
+void CEncoderStrecke::disableInterrupts() {
+    // Interrupts deaktivieren
+    detachInterrupt(PIN_ENCODER_0);
+    detachInterrupt(PIN_ENCODER_1);
+
+    Serial.println("Beide Encoder deaktiviert");
+}
+
+void CEncoderStrecke::enableMotors() {
+  // Motortreiber muss bereits aktiv sein, bevor die Reglerfunktion gestartet wird: 
+  pinMode(PIN_M_INH, OUTPUT);     // Pin konfigurieren
+  digitalWrite(PIN_M_INH, HIGH);  // Einschalten Motortreiber
+
+  // PWM-Basiswert setzen (Basisgeschwindigkeit des Roboters)
+
+  // Motoren zunächst stoppen
+  setMotorSpeed(0.0f, 0.0f);
+
+  // PWM-Kanäle einrichten: Kanal0 für Motor0, Kanal1 für Motor1
+  ledcSetup(0, 1000, 8);
+  ledcSetup(1, 1000, 8);
+}
+
+void CEncoderStrecke::disableMotors() {
+  // Motoren stoppen
+  setMotorSpeed(0.0f, 0.0f);
+
+  // Motortreiber ausschalten
+  digitalWrite(PIN_M_INH, LOW);  //Ausschalten Motortreiber
+}
+
+// Reglerfunktion: Ausgehend von der aktuellen Rotationsgeschwindigkeit wird die nächste
+// Stellgröße für den jeweiligen Motor berechnet und anschließend auf den Motor gegeben.
+// Die Sollposition (in cm) wird übergeben. Ist der Return-Wert true, so wurde die Sollposition
+// erreicht. Bei false wurde die Position noch nicht erreicht.
+bool CEncoderStrecke::reglerStrecke(int posSoll, int richtung) {
+    // Sollposition von cm in Impulse umrechnen
+    int anzImpulse = lround(posSoll*1.818);
+
+    // Prüfen, ob Sollposition erreicht ==> Regler stoppen
+    if(encPosAbs0 >= anzImpulse || encPosAbs1 >= anzImpulse) {
+        // Motoren stoppen
+        RegStellgr[0] = 0.0f;
+        RegStellgr[1] = 0.0f;
+        setMotorSpeed(RegStellgr[0], RegStellgr[1]);
+
+        // Die Sollposition der Encoder ist erreicht ==> true zurückgeben und
+        // Reglerfunktion sofort beenden
+        return true;
+    }
+
+    // alte Proportionalanteile weiterschieben (für D-Anteil)
+    RegAbweichung[1] = RegAbweichung[0];
+
+    // PROPORTIONALANTEIL der Reglerabweichung bestimmen
+    RegAbweichung[0] = encPosAbs0 - encPosAbs1;
+
+    // Abtastzeiten für die Integrierer weiterschieben: time_ReglerInt[neueZeit,alteZeit]
+    time_ReglerInt[1] = time_ReglerInt[0];        // alte Zeit weiterschieben
+    time_ReglerInt[0] = esp_timer_get_time();     // aktuelle Zeit zwischenspeichern
+    // Zeitdifferenz des Abtastschritts berechnen (in sec)
+    double timediff = (time_ReglerInt[0] - time_ReglerInt[1])/1000000.0;
+
+    // Fehlerüberprüfung: die Zeitdifferenz wird nur verwendet, wenn sie im richtigen Bereich
+    // (0 bis 2 Sekunden) liegt. Andernfalls ignorieren.
+    if(timediff < 2.0 && timediff > 0.0) {
+        // Bei Stellgrößenbeschränkung: Integrierer anhalten (Anti-Windup)
+        if(RegStellgr[0] > -254.9 && RegStellgr[0] < 254.9 && RegStellgr[1] > -254.9 && RegStellgr[1] < 254.9) {
+          integrierer += (timediff*RegAbweichung[0]);
+        }
+
+        // DIFFERENZIALANTEIL: Regelabweichung ableiten
+        diff[1] = diff[0];
+        diff[0] = (RegAbweichung[0] - RegAbweichung[1] + (TF_ENC - timediff)*diff[1])/TF_ENC;
+    }
+    else {    // Fehlerausgabe
+        Serial.print("Abtastzeitdifferenz fehlerhaft: ");
+        Serial.println(timediff);
+    }
+
+    // P-I-D-Anteile summieren und Stellgröße berechnen (aktuell wird der D-Anteil nicht verwendet, 
+    // da er zu erhöhten Schwingungen führt)
+    if(richtung == 0) {   // vorwärts fahren
+      RegStellgr[0] = PWM0 - P_ENC*RegAbweichung[0] - 1.0/TN_ENC*integrierer;// - TV_ENC*diff[0];
+      RegStellgr[1] = PWM0 + P_ENC*RegAbweichung[0] + 1.0/TN_ENC*integrierer;// + TV_ENC*diff[0];
+    }
+    else if(richtung == 1) {    // rückwärts fahren
+      RegStellgr[0] = -PWM0 + P_ENC*RegAbweichung[0] + 1.0/TN_ENC*integrierer;// + TV_ENC*diff[0];
+      RegStellgr[1] = -PWM0 - P_ENC*RegAbweichung[0] - 1.0/TN_ENC*integrierer;// - TV_ENC*diff[0];
+    }
+
+    // PWM-Signal auf die Motoren geben
+    setMotorSpeed(RegStellgr[0], RegStellgr[1]);
+
+    // die Sollposition der Encoder ist momentan noch nicht erreicht
+    // ==> false zurückgeben
+    return false;
+}
+
+// Reglerfunktion für die Winkelfahrt: Der Roboter dreht sich um einen bestimmten Winkel nach
+// rechts oder links
+bool CEncoderStrecke::reglerWinkel(int winkelSoll, int richtung) {
+  // Winkel in Encoderimpulse umrechnen: 2 Umdrehungen (720° entsprechen 172 Radimpulsen)
+  int anzImpulse = lround(winkelSoll*0.23889);
+
+  // Prüfen, ob Sollposition erreicht
+  if(encPosAbs0 >= anzImpulse || encPosAbs1 >= anzImpulse) {
+        // Motoren stoppen
+        RegStellgr[0] = 0.0f;
+        RegStellgr[1] = 0.0f;
+        setMotorSpeed(RegStellgr[0], RegStellgr[1]);
+
+        // Die Sollposition der Encoder ist erreicht ==> true zurückgeben und
+        // Reglerfunktion sofort beenden
+        return true;
+    }
+
+    // alte Proportionalanteile weiterschieben (für D-Anteil)
+    RegAbweichung[1] = RegAbweichung[0];
+
+    // PROPORTIONALANTEIL der Reglerabweichung bestimmen
+    RegAbweichung[0] = encPosAbs0 - encPosAbs1;
+
+    // Abtastzeiten für die Integrierer weiterschieben: time_ReglerInt[neueZeit,alteZeit]
+    time_ReglerInt[1] = time_ReglerInt[0];        // alte Zeit weiterschieben
+    time_ReglerInt[0] = esp_timer_get_time();     // aktuelle Zeit zwischenspeichern
+    // Zeitdifferenz des Abtastschritts berechnen (in sec)
+    double timediff = (time_ReglerInt[0] - time_ReglerInt[1])/1000000.0;
+
+    // Fehlerüberprüfung: die Zeitdifferenz wird nur verwendet, wenn sie im richtigen Bereich
+    // (0 bis 2 Sekunden) liegt. Andernfalls ignorieren.
+    if(timediff < 2.0 && timediff > 0.0) {
+        // Bei Stellgrößenbeschränkung: Integrierer anhalten (Anti-Windup)
+        if(RegStellgr[0] > -254.9 && RegStellgr[0] < 254.9 && RegStellgr[1] > -254.9 && RegStellgr[1] < 254.9) {
+          integrierer += (timediff*RegAbweichung[0]);
+        }
+
+        // DIFFERENZIALANTEIL: Regelabweichung ableiten
+        diff[1] = diff[0];
+        diff[0] = (RegAbweichung[0] - RegAbweichung[1] + (TF_ENC - timediff)*diff[1])/TF_ENC;
+    }
+    else {    // Fehlerausgabe
+        Serial.print("Abtastzeitdifferenz fehlerhaft: ");
+        Serial.println(timediff);
+    }
+
+    // P-I-D-Anteile summieren und Stellgröße berechnen (aktuell wird der D-Anteil nicht verwendet, 
+    // da er zu erhöhten Schwingungen führt)
+    // Die Variable "richtung" ist 0 bei links und 1 bei rechts
+    // bei links: M1 positive Drehrichtung und M0 negative Drehrichtung
+    if(richtung == 0) { // M1 positiv, M0 negative Drehrichtung
+        RegStellgr[0] = -PWM0 + P_ENC*RegAbweichung[0] + 1.0/TN_ENC*integrierer;// + TV_ENC*diff[0];
+        RegStellgr[1] = PWM0 + P_ENC*RegAbweichung[0] + 1.0/TN_ENC*integrierer;// + TV_ENC*diff[0];
+    }
+    else if(richtung == 1) {  // M1 negativ, M0 positive Drehrichtung
+        RegStellgr[0] = PWM0 - P_ENC*RegAbweichung[0] - 1.0/TN_ENC*integrierer;// - TV_ENC*diff[0];
+        RegStellgr[1] = -PWM0 - P_ENC*RegAbweichung[0] - 1.0/TN_ENC*integrierer;// - TV_ENC*diff[0];
+    }
+    else {
+      Serial.println("Fehler: falsche Richtungsvorgabe!");
+    }
+
+    // PWM-Signal auf die Motoren geben
+    setMotorSpeed(RegStellgr[0], RegStellgr[1]);
+
+    // die Sollposition der Encoder ist momentan noch nicht erreicht
+    // ==> false zurückgeben
+    return false;
+}
+
+// setMotorSpeed: setzt die Rotationsgeschwindigkeit für beide Motoren (zwischen -255 und +255)
+// ein negatives Vorzeichen bedeutet eine Umkehr der Drehrichtung
+void CEncoderStrecke::setMotorSpeed(float speedM0, float speedM1) {
+  // Motortreiber muss bereits aktiv sein: Vor dem ersten Aufruf dieser Funktion:
+  // pinMode(PIN_M_INH, OUTPUT);
+  // digitalWrite(PIN_M_INH, HIGH);  //Einschalten Motortreiber
+  // // und bereits PWM-Kanäle einrichten:
+  // ledcSetup(0, 1000, 8);
+  // ledcSetup(1, 1000, 8);
+
+  if (speedM0 > 0.0f) {
+    if (speedM0 >= 254.9f) {
+      // Motor läuft mit maximaler Geschwindigkeit
+      ledcDetachPin(PORT_M_0[0]);
+      ledcDetachPin(PORT_M_0[1]);
+      pinMode(PORT_M_0[0], OUTPUT);
+      pinMode(PORT_M_0[1], OUTPUT);
+      digitalWrite(PORT_M_0[0], LOW);
+      digitalWrite(PORT_M_0[1], HIGH);
+    }
+    else if(speedM0 >= 0.01f) {
+      // PWM konfigurieren
+      ledcDetachPin(PORT_M_0[0]);
+      ledcAttachPin(PORT_M_0[1], 0);            
+      ledcWrite(0, speedM0);
+      pinMode(PORT_M_0[0], OUTPUT);
+      digitalWrite(PORT_M_0[0], LOW);
+    }
+    else {
+      // Motor ausschalten
+      ledcDetachPin(PORT_M_0[0]);
+      ledcDetachPin(PORT_M_0[1]);
+      digitalWrite(PORT_M_0[0], LOW);
+      digitalWrite(PORT_M_0[1], LOW);
+    }
+  } else {
+    if (speedM0 <= -254.9f) {
+      // Motor läuft mit maximaler Geschwindigkeit
+      ledcDetachPin(PORT_M_0[0]);
+      ledcDetachPin(PORT_M_0[1]);
+      pinMode(PORT_M_0[0], OUTPUT);
+      pinMode(PORT_M_0[1], OUTPUT);
+      digitalWrite(PORT_M_0[0], HIGH);
+      digitalWrite(PORT_M_0[1], LOW);
+    }
+    else if(speedM0 <= -0.01f) {
+      // PWM konfigurieren
+      ledcDetachPin(PORT_M_0[1]);
+      ledcAttachPin(PORT_M_0[0], 0);            
+      ledcWrite(0, -speedM0);
+      pinMode(PORT_M_0[1], OUTPUT);
+      digitalWrite(PORT_M_0[1], LOW);
+    }
+    else {
+      // Motor ausschalten
+      ledcDetachPin(PORT_M_0[0]);
+      ledcDetachPin(PORT_M_0[1]);
+      digitalWrite(PORT_M_0[0], LOW);
+      digitalWrite(PORT_M_0[1], LOW);
+    }
+  }
+  if (speedM1 > 0.0f) {
+    if (speedM1 >= 254.9f) {
+      // Motor läuft mit maximaler Geschwindigkeit
+      ledcDetachPin(PORT_M_1[0]);
+      ledcDetachPin(PORT_M_1[1]);
+      pinMode(PORT_M_1[0], OUTPUT);
+      pinMode(PORT_M_1[1], OUTPUT);
+      digitalWrite(PORT_M_1[0], LOW);
+      digitalWrite(PORT_M_1[1], HIGH);
+    }
+    else if(speedM1 >= 0.01f) {
+      // PWM konfigurieren
+      ledcDetachPin(PORT_M_1[0]);
+      ledcAttachPin(PORT_M_1[1], 1);            
+      ledcWrite(1, speedM1);
+      pinMode(PORT_M_1[0], OUTPUT);
+      digitalWrite(PORT_M_1[0], LOW);
+    }
+    else {
+      // Motor ausschalten
+      ledcDetachPin(PORT_M_1[0]);
+      ledcDetachPin(PORT_M_1[1]);
+      digitalWrite(PORT_M_1[0], LOW);
+      digitalWrite(PORT_M_1[1], LOW);
+    }
+  } else {
+    if (speedM1 <= -254.9f) {
+      // Motor läuft mit maximaler Geschwindigkeit
+      ledcDetachPin(PORT_M_1[0]);
+      ledcDetachPin(PORT_M_1[1]);
+      pinMode(PORT_M_1[0], OUTPUT);
+      pinMode(PORT_M_1[1], OUTPUT);
+      digitalWrite(PORT_M_1[0], HIGH);
+      digitalWrite(PORT_M_1[1], LOW);
+    }
+    else if(speedM1 <= -0.01f) {
+      // PWM konfigurieren
+      ledcDetachPin(PORT_M_1[1]);
+      ledcAttachPin(PORT_M_1[0], 1);            
+      ledcWrite(1, -speedM1);
+      pinMode(PORT_M_1[1], OUTPUT);
+      digitalWrite(PORT_M_1[1], LOW);
+    }
+    else {
+      // Motor ausschalten
+      ledcDetachPin(PORT_M_1[0]);
+      ledcDetachPin(PORT_M_1[1]);
+      digitalWrite(PORT_M_1[0], LOW);
+      digitalWrite(PORT_M_1[1], LOW);
+    }
+  }
+}
 
 /* ====================================================================================================================== */
 

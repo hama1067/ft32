@@ -135,12 +135,12 @@ void webSocketTask(void* params) {
 
     		//Testing 5 sec intervall and start ws-timeout here JM:
     		unsigned long currentTime = millis();
-    		if (currentTime % 5000 < oldModulo) {
-    			Serial.println("[ws] ws-connection " + (String)websocketClientID + ": 5 Seconds passed, time: " + (String)currentTime);
+    		if (currentTime % 10000 < oldModulo) {
+    			Serial.println("[ws] ws-connection " + (String)websocketClientID + ": 10 Seconds passed, time: " + (String)currentTime);
     			wsHandler->websocketTimedOut(websocketClientID);
     		}
        
-    		oldModulo = currentTime % 5000;
+    		oldModulo = currentTime % 10000;
       }
     }
   } else {

@@ -39,6 +39,8 @@ const int PIN_M_INH = 27;                                                     //
 extern int PORT_M_PWM[MOTOR_QTY];                                             // Output-Pins Motor-Drehzahl
 const int PORT_M_DIR[MOTOR_QTY] = { 16, 2 };                                  // ,16, 2};	//Output-Pins Motor-Richtung !! NUR 17 und 4 sind Verbunden, Rest ist Dummy
 const int PORT_M_ENCODER[MOTOR_QTY] = { 36, 39 };                             // ,25, 26};//InputPins Motor Encoder -> MOMENTAN NICHT VERWENDET
+const int PIN_ENCODER_0 = 36;                // Pin für Encoder 0
+const int PIN_ENCODER_1 = 39;               // Pin für Encoder 1
 
 extern bool ISMAXI;
 
@@ -195,49 +197,58 @@ void led_update(Led ledArray[]);
 
 /* ====================================================================================================================== */
 
-class Encoder {
+// ===== ENCODERSTEUERUNG
+// Interrupt-Service-Routinen ==> Hochzählen der Encoder-Zähler
+void ISREnc0();
+void ISREnc1();
+
+class CEncoderStrecke {
 public:
+  // Konstruktor
+  CEncoderStrecke();
 
-      Encoder();
-      void Encoder_reset();
-      void Encoder_M_1();
-      void Encoder_M_0();
-      void setCounter(int mMotorNr,int Counter_soll);
-      void setstart_flag_t();
-      void setstart_flag_f();
-      bool getstart_flag();
-      bool getflag(int mMotorNr);
-      int getCounter(int mMotorNr);
-      
+  // Beide Encoder aktivieren ==> Impulse werden gezählt
+  // Zusätzlich alle erforderlichen Variablen zurücksetzen
+  void enableInterrupts();
+
+  // Beide Encoder deaktivieren ==> es werden keine weiteren Impulse gezählt
+  void disableInterrupts();
+
+  // den Motortreiber aktivieren und PWM einrichten
+  void enableMotors();
+
+  // Motoren stoppen und Motortreiber deaktivieren
+  void disableMotors();
+
+  // Reglerfunktion: Ausgehend von der aktuellen Rotationsgeschwindigkeit wird die nächste
+  // Stellgröße für den jeweiligen Motor berechnet und anschließend auf den Motor gegeben.
+  // Die Sollposition (in cm) wird übergeben. Ist der Return-Wert true, so wurde die Sollposition
+  // erreicht. Bei false wurde die Position noch nicht erreicht.
+  // richtung == 0: vorwärts, richtung == 1: rückwärts
+  bool reglerStrecke(int posSoll, int richtung);
+
+  // Reglerfunktion für die Winkelfahrt: Der Roboter dreht sich um einen bestimmten Winkel nach
+  // rechts (1) oder links (0)
+  bool reglerWinkel(int winkelSoll, int richtung);
+
+  // setMotorSpeed: setzt die Rotationsgeschwindigkeit für beide Motoren (zwischen -255 und +255)
+  // ein negatives Vorzeichen bedeutet eine Umkehr der Drehrichtung
+  void setMotorSpeed(float speedM0, float speedM1);
+
 private:
-  int Counter_M[2];
-  int Counter_M_max[2];
-  bool finish_flag[2];
-  bool start_flag;
-  static Encoder* sEncoder;
-  static void ISR_Test_1();
-  static void ISR_Test_0();
+    float integrierer;          // Wert des Integrierers (I-Anteil)
+    float RegAbweichung[2];     // Reglerabweichung des aktuellen (0) und letzten (1) Abtastschritts
+    float RegStellgr[2];        // Stellgröße von Motor0 und Motor1
+    float diff[2];              // Differenzialanteil (aktueller (0) und letzter (1) Abtastschritt)
 
-};
+    // Reglerparameter für den PID-Regler; der D-Anteil wird bisher nicht verwendet.
+    float PWM0 = 114;           // PWM-Wert für die Basis-Ansteuerung der Motoren
+    float P_ENC = 15;           // Proportionalanteil
+    float TN_ENC = 0.1;         // Integralanteil
+    float TV_ENC = 0.06;        // Differenzialanteil
+    float TF_ENC = 0.5*TV_ENC;  // Filterzeitkonstante
 
-class EncoderKreis {
-  public:
-
-    EncoderKreis();
-    void setstart(unsigned char pTurnRight, double circle);
-    void EncoderM_1();
-    void EncoderM_0();
-     
-  private:
-  static EncoderKreis* sEncoder;
-  double mcircle;
-  int mCounter;
-  bool finish_flag;
-  static void ISR_1();
-  static void ISR_0();
-  Motor mMotor_0;
-  Motor mMotor_1;
-  
+    int64_t time_ReglerInt[2];  // Abtastzeit des Integrierers: aktueller und letzter Zeitpunkt der Abtastung
 };
 
 /* ====================================================================================================================== */
@@ -273,23 +284,5 @@ private:
 };
 
 /* ====================================================================================================================== */
-
-/* // Wird Momentan nicht genutzt:
-// Klasse um zusaetzliche IOs vom SX1509 zu nutzen
-// Stattdessen erfolgt eine Abänderung der Klasse "DigitalAnalogIn", die sie mit dem SX1509 kompatibel macht.
-
-class DigitalIO_PWMout
-{
-public:
-  DigitalIO_PWMout(); //Parameteterloser Ctor, kann nicht genutzt werden um funktionerende Instanz zu erstellen
-  DigitalIO_PWMout(byte io, byte inOut); //io von 0-7, inOut-Constants von ARDUINO nutzen - als INPUT sollte INPUT_PULLUP verwendet werden (außer eine ander 3V3-Quelle wird verwendet)
-  unsigned int getValue(); //liest Digitalen Input, gibt bei INPUT_PULLUP invertierten Wert zurück --> Pin durch Schalter an Masse --> Rückgabe: HIGH (setzt Pin zu erst auf direction = INPUT_PULLUP, falls dieser nicht schon INPUT_PULLUP ist)
-  void setValueDig(bool val);         //setzt digitalen Output (setzt Pin zu erst auf direction = OUTPUT, falls dieser nicht schon OUTPUT ist)
-  void setPWM(unsigned char pwmVal);      //setzt Pin auf PWM (Frequenz fest für A4990 eingestellt - in init zu sehen)
-private:
-  byte mIOPin;      //Pin am SX1509
-  byte mIONumber;     //Nummer des IOs (0-7)
-  byte mDirection;    //input oder output
-};*/
 
 #endif

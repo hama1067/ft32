@@ -146,19 +146,23 @@ public:
 	*/
 	void printErrors();
 
- /*
-  * 
-  */
- queueElementID getQueueElementID(String strID);
+  /*
+   * 
+   */
+  queueElementID getQueueElementID(String strID);
 
 private:
 	array<Motor, MOTOR_QTY> mMotorArray;  //Anlegen aller Motoren in einen Array
 	array<Led, LED_QTY> mLedArray; //Anlegen aller Ledn in einen Array
 	array<CServoMotor, SERVO_QTY> mServoArray;	//Anlegen aller Servos in einen Array
 	array<DigitalAnalogIn, DAIN_QTY> mDAIn; //Anlegen aller Eingänge in einen Array
+ 
   //Encoder mEncoder;
   //CAngle mAngle;
   //EncoderKreis mEncoderKreis;
+  
+  /* TODO: Neue Encoderfunktionen */
+  CEncoderStrecke mEncoderStrecke;
   
 	//SHM* mSHM;	//Pointer on Shared memory
 	String uebergabestr;
