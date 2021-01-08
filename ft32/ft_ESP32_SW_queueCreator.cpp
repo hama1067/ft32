@@ -52,21 +52,32 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
 			break;
     case ENCODER:  // Encoder
       /* TODO: create encoder data from queue string */
-      
+
+      /* not used? */
       createPtr->portNr = uebergabestr.charAt(ustrPos) - '0';  //Port-Nummer eintragen
+      
       ustrPos++;  //Zaehler auf Komma legen
       checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* used */
       ustrPos++;  //Zaehler auf Richtung legen
       createPtr->compare_direction = uebergabestr.charAt(ustrPos) - '0';  //Richtung
+      
       ustrPos++;  //Zaehler auf Komma legen
       checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* not used? */
       ustrPos++;  //Zaehler auf Drehzahl legen
       createPtr->val_pwm_timems_loop = stoi_ft(uebergabestr, ustrPos);  //Drehzahl (0..8, vgl. RoboPro)
+      
       ustrPos++;  //Zaehler auf Komma legen
       checkChar(ustrPos, ',');  //auf Komma pruefen
+
+      /* used */
       ustrPos++; ////Zaehler auf Distanz legen
       createPtr->val_distance_m0 = stoi_ft(uebergabestr, ustrPos);
-      ustrPos++;  //Zaehler auf Komma legen
+
+      /* ustrPos++;  //Zaehler auf Komma legen
       checkChar(ustrPos, ',');  //auf Komma pruefen
       ustrPos++; ////Zaehler auf Port-Nr legen
       createPtr->portNr1 = uebergabestr.charAt(ustrPos) - '0';  //Port-Nummer eintragen
@@ -81,7 +92,7 @@ void SW_queue::queueCreator()// commonElement*& startPtr, commonElement*& endPtr
       ustrPos++;  //Zaehler auf Komma legen
       checkChar(ustrPos, ',');  //auf Komma pruefen
       ustrPos++; ////Zaehler auf Distanz legen
-      createPtr->val_distance_m1 = stoi_ft(uebergabestr, ustrPos);
+      createPtr->val_distance_m1 = stoi_ft(uebergabestr, ustrPos);*/
 
       break;
 		case LED:	// LED strip pixel

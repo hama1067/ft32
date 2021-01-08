@@ -2,9 +2,9 @@
  * ft32.ino
  *
  *  Created on: Mar 04, 2019
- *      modified on: Aug 05, 2020
+ *      modified on: Jan 08, 2021
  *      Author: joseph
- *      version: v1.2.2 alpha
+ *      version: v1.2.3 alpha
  *      current stable release: v1.2 beta (1.2)
  *  
  *  description:
@@ -19,7 +19,7 @@
  *  set the current version number; should be equal to the current stable release
  *  number from github or above if its not a test version. 
  */
-#define RELEASE_VERSION "1.2.2"
+#define RELEASE_VERSION "1.2.3"
 
 /*  
  *   specify the type of roboter we want to use
