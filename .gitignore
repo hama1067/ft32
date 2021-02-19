@@ -1,6 +1,9 @@
 .cproject
 .project
 spec.d
-.settings/
 
+/.settings/
 /ft32/sloeber.ino.cpp
+/core/
+/Release/
+/libraries/
