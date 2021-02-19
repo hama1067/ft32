@@ -8,9 +8,12 @@
 #ifndef CIPHER_H_
 #define CIPHER_H_
 
-#include "mbedtls/aes.h"
 #include <Arduino.h>
-//#include <WString.h>
+#include "mbedtls/aes.h"
+
+/* in case aes.h has to be changed due to #include MBEDTLS_CONFIG_FILE is not working, try disabling the line
+ * l.47 in aes.h and include the following */
+#include "mbedtls/esp_config.h"
 
 class Cipher {
 public:
