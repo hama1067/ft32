@@ -13,7 +13,7 @@
  *  notifications:
  *  
  */
- 
+
 /* **************************************************************************** */
 /*  
  *  set the current version number; should be equal to the current stable release
@@ -60,7 +60,7 @@ SHM *ptrSHM;
 SW_queue mySW_queue;
 
 /* its highly recommended to change this key for every robot and make it NOT public! */
-char * secureCipherKey = "abcdefghijklmnop";
+char *secureCipherKey = "abcdefghijklmnop";
 /* ********************************************************************************* */
 
 /* ********************************************* */
@@ -71,96 +71,105 @@ CheckMaxiExtension BoardType;
 /* ********************************************/
 
 void setup() {
-    Serial.begin(115200);											                    // serial communication
-    ptrSHM = new SHM;                          		 			    	    // create shared memory
-    SPIFFS.begin(true);                                           // initialize internal storage
+	Serial.begin(115200);								// serial communication
+	ptrSHM = new SHM;                          		 	// create shared memory
+	SPIFFS.begin(true);                           		// initialize internal storage
 
-    /* disable loop watchdog, causes reboot errors while loading spiffs content over wifi */
-    disableLoopWDT();
-    
-    /* initialize system files and prepare to setup board parameters */
+	/* disable loop watchdog, causes reboot errors while loading spiffs content over wifi */
+	disableLoopWDT();
 
-    nConfigHandler = new ConfigHandler(ptrSHM);
-    nConfigHandler->setCipherKey(secureCipherKey);                // initialize cipher key
-    nConfigHandler->checkup();                                    // check system if all neccessary files exists
-    
-    /* initialize board specific parameters like oled, buttons, motor drivers */
+	/* initialize system files and prepare to setup board parameters */
 
-    DisableMotorBoard();                        					        // turn off motor driver
-    // initExtension();                            					      // initialize extension board
+	nConfigHandler = new ConfigHandler(ptrSHM);
+	nConfigHandler->setCipherKey(secureCipherKey);      // initialize cipher key
+	nConfigHandler->checkup();    						// check system if all neccessary files exists
 
-    bool maxiboard = BoardType.CheckMaxi();     					        // detecting board type (small or big one -> HWG, HWK)
-    mySW_queue.setBoardType(maxiboard);         					        // set board specific port properties 
+	/* initialize board specific parameters like oled, buttons, motor drivers */
 
-    /* detecting board type, depending one which board we have to set the right button pin number */
+	DisableMotorBoard();                        		// turn off motor driver
+	// initExtension();                            		// initialize extension board
 
-    int TASTER_PIN;  
-    (maxiboard == true) ? TASTER_PIN = 23 : TASTER_PIN = 35; 	    // case true:  maxi board (HWG) detected, case false: mini board (HWK) detected   
-    hmiTaster.initButton(TASTER_PIN, ptrSHM);           			    // initialize hmi button (connection button + start queue button)
+	bool maxiboard = BoardType.CheckMaxi(); 			// detecting board type (small or big one -> HWG, HWK)
+	mySW_queue.setBoardType(maxiboard);  				// set board specific port properties
 
-    /* check for wlanConfiguration file, try to connect, if fail, create an access point */
+	/* detecting board type, depending one which board we have to set the right button pin number */
 
-	  cOledHandler::getInstance()->printOledMessage("Booting ...");
+	int TASTER_PIN;
+	(maxiboard == true) ? TASTER_PIN = 23 : TASTER_PIN = 35; 	// case true:  maxi board (HWG) detected, case false: mini board (HWK) detected
+	hmiTaster.initButton(TASTER_PIN, ptrSHM); 					// initialize hmi button (connection button + start queue button)
 
-    bool connectToSavedWlan = false;
-    String wlanConfiguration[2];
+	/* check for wlanConfiguration file, try to connect, if fail, create an access point */
 
-    if ( digitalRead(TASTER_PIN) == true ) {
-  		// printing oled message: Check configuration file
-  		cOledHandler::getInstance()->printOledMessage("Check configuration\nfile ...");
-  
-  		if( nConfigHandler->checkNetworkConfigurationFile() ) {  
-  			// config file found and button not pressed to connect to saved, crypted wlanConfiguration.txt      
-  			nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
-  
-  			// printing oled message: connecting to existing network
-  			cOledHandler::getInstance()->printOledMessage("Connecting to wlan\n...\n\n=> " + wlanConfiguration[0]);
-    
-  			// save decrypted ssid in wlanConfiguration[0], 
-  			connectToSavedWlan = nHandler.joinExistingNetwork(wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
-          
-  			if( connectToSavedWlan ) {
-  				nHandler.setSsid(wlanConfiguration[0].c_str());
-  				// -> "Connected to network"
-  			} else {
-  				cOledHandler::getInstance()->printOledMessage("Connection failed.\nCreating network ...");
-  				// -> "Access point created"
-  			}
-  		} else {
-  			cOledHandler::getInstance()->printOledMessage("No network config\nfile found!\nCreating network ...");
-  		}
-    } else {
-  		cOledHandler::getInstance()->printOledMessage("Button pressed.\nCreating network ...");
-   		connectToSavedWlan = false; // -> "Access point created"    
-    }
+	cOledHandler::getInstance()->printOledMessage("Booting ...");
 
-    if( !connectToSavedWlan ) {
-		  nHandler.createUniqueAP(); // -> Creating unique access point "FT-CODY-*"
-    }
+	bool connectToSavedWlan = false;
+	String wlanConfiguration[2];
 
-    /* creating AssetHandler (required for providing local codypp version from SPIFFS */
-    /* creating WebsocketHandler to handle incomming websocket connections */
-    /* creating initQueue_static thread to start/stop queue */
+	if (digitalRead(TASTER_PIN) == true) {
+		// printing oled message: Check configuration file
+		cOledHandler::getInstance()->printOledMessage(
+				"Check configuration\nfile ...");
 
-    ptrSHM->IPAdress = nHandler.getIP();
-    nAssetHandler = new AssetHandler();
-    wsHandler = new WebsocketHandler(ptrSHM);
+		if (nConfigHandler->checkNetworkConfigurationFile()) {
+			// config file found and button not pressed to connect to saved, crypted wlanConfiguration.txt
+			nConfigHandler->decipherNetworkConfigurationFile(wlanConfiguration);
 
-    delay(10);
-    Serial.println("[main] Starting queue task ...");
+			// printing oled message: connecting to existing network
+			cOledHandler::getInstance()->printOledMessage(
+					"Connecting to wlan\n...\n\n=> " + wlanConfiguration[0]);
 
-	  mySW_queue.startQueueTask(ptrSHM);
-    Serial.println("[main] => System is up and running.");
-    Serial.println("[main] release version: r-" + String(RELEASE_VERSION));
-    Serial.println("[main] selected roboter model: " + String(ROBOTER_VERSION == 0 ? "FT32": "eMalRob"));
+			// save decrypted ssid in wlanConfiguration[0],
+			connectToSavedWlan = nHandler.joinExistingNetwork(
+					wlanConfiguration[0].c_str(), wlanConfiguration[1].c_str());
 
-    /* print connection status */
-    cOledHandler::getInstance()->printConnectionStatus(nHandler.getIP(), nHandler.getSsid(), nHandler.getMode());
+			if (connectToSavedWlan) {
+				nHandler.setSsid(wlanConfiguration[0].c_str());
+				// -> "Connected to network"
+			} else {
+				cOledHandler::getInstance()->printOledMessage(
+						"Connection failed.\nCreating network ...");
+				// -> "Access point created"
+			}
+		} else {
+			cOledHandler::getInstance()->printOledMessage(
+					"No network config\nfile found!\nCreating network ...");
+		}
+	} else {
+		cOledHandler::getInstance()->printOledMessage(
+				"Button pressed.\nCreating network ...");
+		connectToSavedWlan = false; // -> "Access point created"
+	}
+
+	if (!connectToSavedWlan) {
+		nHandler.createUniqueAP(); // -> Creating unique access point "FT-CODY-*"
+	}
+
+	/* creating AssetHandler (required for providing local codypp version from SPIFFS */
+	/* creating WebsocketHandler to handle incomming websocket connections */
+	/* creating initQueue_static thread to start/stop queue */
+
+	ptrSHM->IPAdress = nHandler.getIP();
+	nAssetHandler = new AssetHandler();
+	wsHandler = new WebsocketHandler(ptrSHM);
+
+	delay(10);
+	Serial.println("[main] Starting queue task ...");
+
+	mySW_queue.startQueueTask(ptrSHM);
+	Serial.println("[main] => System is up and running.");
+	Serial.println("[main] release version: r-" + String(RELEASE_VERSION));
+	Serial.println(
+			"[main] selected roboter model: "
+					+ String(ROBOTER_VERSION == 0 ? "FT32" : "eMalRob"));
+
+	/* print connection status */
+	cOledHandler::getInstance()->printConnectionStatus(nHandler.getIP(),
+			nHandler.getSsid(), nHandler.getMode());
 }
 
 void loop() {
-    nAssetHandler->handleAssetRequests();
-    wsHandler->handleWebSocketRequests();
-    hmiTaster.handleButton();
-	  delay(1);
+	nAssetHandler->handleAssetRequests();
+	wsHandler->handleWebSocketRequests();
+	hmiTaster.handleButton();
+	delay(1);
 }
