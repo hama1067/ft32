@@ -4,6 +4,7 @@ extern WebsocketHandler *wsHandler;
 extern ConfigHandler *nConfigHandler;
 extern SHM * ptrSHM;
 
+
 void webSocketTask(void* params) {
   WiFiClient* nClient = (WiFiClient*) params;
   WebSocketServer* nWebSocketServer = new WebSocketServer();
@@ -136,7 +137,10 @@ void webSocketTask(void* params) {
     		//Testing 5 sec intervall and start ws-timeout here JM:
     		unsigned long currentTime = millis();
     		if (currentTime % 10000 < oldModulo) {
-    			Serial.println("[ws] ws-connection " + (String)websocketClientID + ": 10 Seconds passed, time: " + (String)currentTime);
+				#if WS_TIMEOUT_DEBUG_OUTPUT == 1
+    				Serial.println("[ws] ws-connection " + (String)websocketClientID + ": 10 Seconds passed, time: " + (String)currentTime);
+				#endif
+
     			wsHandler->websocketTimedOut(websocketClientID);
     		}
        
@@ -191,43 +195,48 @@ void eventListener(void* params) {
   vTaskDelete(NULL);
 }
 
+
 WebsocketHandler::WebsocketHandler(SHM *pSHM) {
-  Serial.println();
-  Serial.print("[ws] Joining SHM container with status ");
-  mSHM=pSHM;
-  Serial.println(mSHM->commonStart);
+	Serial.println();
+	Serial.println("[ws] creating WebsocketHandler object instance ...");
+	#if WS_TIMEOUT_DEBUG_OUTPUT == 1
+		Serial.println("[ws] WARNING: WebsocketHandler started with TIMEOUT_DEBUG_OUTPUT on!");
+	#endif
 
-  addClient.unlock();
-  removeClient.unlock();
-  sendData.unlock();
-  clientID.unlock();
-  accessFlag.unlock();
-  
-  clientCount = 0;
-  webSocketServer = new WiFiServer(90);
+	Serial.print("[ws] Joining SHM container with status ");
+	mSHM = pSHM;
+	Serial.println(mSHM->commonStart);
 
-  webSocketConnections = new WebSocketConnection*[MAXCLIENTS];
+	addClient.unlock();
+	removeClient.unlock();
+	sendData.unlock();
+	clientID.unlock();
+	accessFlag.unlock();
 
-  for(int i = 0; i < MAXCLIENTS; i++) {
-    setWebsocketFlag(i, true);
-    setWebsocketPingReceived(i, true);
-  }
+	clientCount = 0;
+	webSocketServer = new WiFiServer(90);
 
-  for(int i = 0; i < MAXCLIENTS; i++) {
-    webSocketConnections[i] = NULL;
-    //connectedClients[i] = NULL;
-  }
+	webSocketConnections = new WebSocketConnection*[MAXCLIENTS];
 
-  xTaskCreatePinnedToCore(
-    eventListener,    /* Function to implement the task */
-    "ws-event",       /* Name of the task */
-    4096,             /* Stack size in words */
-    NULL,             /* Task input parameter */
-    0,                /* Priority of the task */
-    NULL,             /* Task handle. */
-    0);               /* Core where the task should run */
+	for (int i = 0; i < MAXCLIENTS; i++) {
+		setWebsocketFlag(i, true);
+		setWebsocketPingReceived(i, true);
+	}
 
-  webSocketServer->begin();
+	for (int i = 0; i < MAXCLIENTS; i++) {
+		webSocketConnections[i] = NULL;
+		//connectedClients[i] = NULL;
+	}
+
+	xTaskCreatePinnedToCore(eventListener, /* Function to implement the task */
+	"ws-event", /* Name of the task */
+	4096, /* Stack size in words */
+	NULL, /* Task input parameter */
+	0, /* Priority of the task */
+	NULL, /* Task handle. */
+	0); /* Core where the task should run */
+
+	webSocketServer->begin();
 }
 
 WebsocketHandler::~WebsocketHandler() {
@@ -288,10 +297,12 @@ void WebsocketHandler::sendWebSocketMessage(String message) {
 
   for(int i = 0; i < MAXCLIENTS; i++) {
     if(webSocketConnections[i] != NULL) {
-      Serial.print("[ws] Sending msg to client ");
-      Serial.print(i);
-      Serial.print(" : ");
-      Serial.println(message);
+    	if( !(message == "pong" &&  WS_TIMEOUT_DEBUG_OUTPUT == 0) ) {
+			Serial.print("[ws] Sending msg to client ");
+			Serial.print(i);
+			Serial.print(" : ");
+			Serial.println(message);
+    	}
       
       webSocketConnections[i]->pWebSocketServer->sendData(message);
     }
@@ -300,23 +311,27 @@ void WebsocketHandler::sendWebSocketMessage(String message) {
   sendData.unlock();
 }
 
-void WebsocketHandler::sendWebSocketMessageToClient(WiFiClient * pClient, String msg) {
-  sendData.lock();
-  int clientID = getClientID(pClient);
-  
-  Serial.print("[ws] Sending msg to client ");
-  Serial.print(clientID);
+void WebsocketHandler::sendWebSocketMessageToClient(WiFiClient *pClient, String msg) {
+	sendData.lock();
+	int clientID = getClientID(pClient);
 
-  if(clientID != -1 && webSocketConnections[clientID] != NULL) {
-    Serial.print(" : ");
-    Serial.println(msg);
-    
-    webSocketConnections[clientID]->pWebSocketServer->sendData(msg);
-  } else {
-    Serial.println(" failed. Client is removed or not available anymore.");
-  }
+	if (!(msg == "pong" && WS_TIMEOUT_DEBUG_OUTPUT == 0)) {
+		Serial.print("[ws] Sending msg to client ");
+		Serial.print(clientID);
+	}
 
-  sendData.unlock();
+	if (clientID != -1 && webSocketConnections[clientID] != NULL) {
+		if (!(msg == "pong" && WS_TIMEOUT_DEBUG_OUTPUT == 0)) {
+			Serial.print(" : ");
+			Serial.println(msg);
+		}
+
+		webSocketConnections[clientID]->pWebSocketServer->sendData(msg);
+	} else {
+		Serial.println(" failed. Client is removed or not available anymore.");
+	}
+
+	sendData.unlock();
 }
 
 int WebsocketHandler::getClientID(WiFiClient * pClient) {
@@ -374,15 +389,17 @@ void WebsocketHandler::websocketTimedOut(int clientID) {
 	//necessary, as now every connection checks for timeout itself, not only one timer
   
 	if(webSocketConnections[clientID] != NULL) {
-		Serial.print("[ws-timer] Client ");
-		Serial.print(clientID);
-		Serial.println(":");
-      
-		Serial.print("[ws-timer] Flag: ");
-		Serial.println(wsHandler->getWebsocketFlag(clientID));
-		Serial.print("[ws-timer] Ping: ");
-		Serial.println(wsHandler->getWebsocketPingReceived(clientID));
-    
+		#if WS_TIMEOUT_DEBUG_OUTPUT == 1
+			Serial.print("[ws-timer] Client ");
+			Serial.print(clientID);
+			Serial.println(":");
+
+			Serial.print("[ws-timer] Flag: ");
+			Serial.println(wsHandler->getWebsocketFlag(clientID));
+			Serial.print("[ws-timer] Ping: ");
+			Serial.println(wsHandler->getWebsocketPingReceived(clientID));
+		#endif
+
 		if(getWebsocketFlag(clientID) == true && getWebsocketPingReceived(clientID) == true) {
 		// flag = true -> ping received
 		setWebsocketPingReceived(clientID, true);

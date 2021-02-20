@@ -10,9 +10,12 @@
 #ifndef ASSETHANDLER_H_
 #define ASSETHANDLER_H_
 
+#define ASSET_DEBUG_OUTPUT 0
+
 #include <WiFi.h>
 #include <Esp.h>
-#include "SPIFFSTest.h"
+
+#include "../memory/SPIFFSTest.h"
 
 class AssetHandler {
 public:
@@ -25,12 +28,6 @@ public:
      *   default destructor
      */
 	 ~AssetHandler();
-
-    /*
-     *   display Chip ID, Heap Size, Chip Size, Chip Speed
-     *   and Chip Mode of the ESP32 microcontroller
-     */
-    void printServerInformation();
     
     /*
      *   function, which handles the incomming requests (get/post requests)

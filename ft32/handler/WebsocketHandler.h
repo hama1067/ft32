@@ -11,12 +11,16 @@
 #define WEBSOCKETHANDLER_H_
 
 #define MAXCLIENTS 2
+#define WS_TIMEOUT_DEBUG_OUTPUT 0
+
 #include <WiFi.h>
-#include "WebSocketServer.h"
-#include "WebSocketConnection.h"
-#include "CSpiffsStorage.h"
-#include "Mutex.h"
-#include "ft_ESP32_SHM.h"
+#include "../websocket/WebSocketServer.h"
+#include "../websocket/WebSocketConnection.h"
+#include "../websocket/Mutex.h"
+
+#include "../memory/CSpiffsStorage.h"
+#include "../shm/ft_ESP32_SHM.h"
+
 #include "ConfigHandler.h"
 
 class WebsocketHandler {

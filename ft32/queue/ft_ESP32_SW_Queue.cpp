@@ -1,10 +1,10 @@
 #include "ft_ESP32_SW_Queue.h"
-#include "CSpiffsStorage.h"
-#include "OledHandler.h"
-#include "NetworkHandler.h"
+#include "../memory/CSpiffsStorage.h"
+#include "../handler/OledHandler.h"
+#include "../handler/NetworkHandler.h"
 
-extern SHM* ptrSHM;
-extern SW_queue mySW_queue;
+//extern SHM* ptrSHM;
+extern SW_queue *mySW_queue;
 extern NetworkHandler nHandler;
 
 void initQueue_static(void* arg) {
@@ -13,7 +13,7 @@ void initQueue_static(void* arg) {
 	//Wait forever for flag (commonStart), execute queue and start waiting again
 	while (1) {
 		if (true == pSHM->commonStart) {
-			mySW_queue.SW_work(pSHM);
+			mySW_queue->SW_work(pSHM);
 		}
 		else {
 			delay(10);
@@ -24,42 +24,46 @@ void initQueue_static(void* arg) {
 }
 
 SW_queue::SW_queue() {
-  //anlegen aller IO-Objekte (Schnittstelle zur Hardware)
-  Serial.println("[Q] IO-Objekte anlegen...");
+	Serial.println();
+	Serial.println("[Q] creating SW_queue object instance ...");
+	#if QUEUE_DEBUG_OUTPUT == 1
+		Serial.println("[Q] WARNING: SW_queue started with QUEUE_DEBUG_OUTPUT on!");
+	#endif
 
-  for (unsigned int i = 0; i < mMotorArray.size(); i++)	{ //2 Motoren anlegen (Standardkonstruktor)
-    mMotorArray[i] = Motor(i);	//Motor mit "richtigem" Konstruktor erzeugen, in Array speichern
-  }
+    //anlegen aller IO-Objekte (Schnittstelle zur Hardware)
+	Serial.println("[Q] IO-Objects creating...");
 
-  led_init();
-  
-  for (unsigned int i = 0; i < mLedArray.size(); i++) {
-    mLedArray[i] = Led(i);
-  }
+	for (unsigned int i = 0; i < mMotorArray.size(); i++) { //2 Motoren anlegen (Standardkonstruktor)
+		mMotorArray[i] = Motor(i);//Motor mit "richtigem" Konstruktor erzeugen, in Array speichern
+	}
 
-  led_clear();
-  
-  for (unsigned int i = 0; i < mServoArray.size(); i++)
-  {
-    mServoArray[i] = CServoMotor(i, 100);
-  }
-  for (unsigned int i = 0; i < mDAIn.size(); i++)
-  {
-    mDAIn[i] = DigitalAnalogIn(i);
-  }
-  Serial.println("IO-Objekte angelegt\n");
+	led_init();
 
-  uebergabestr = "";
+	for (unsigned int i = 0; i < mLedArray.size(); i++) {
+		mLedArray[i] = Led(i);
+	}
 
-  startPtr = new commonElement;	//Anlegen des Start-Elements
-  endPtr = new commonElement;	//Anlegen des End-Elements
+	led_clear();
 
-  qCreateError = false;
-  qCreateErrorID = 0;
-  qWorkError = false;
-  qWorkErrorID = 0;
+	for (unsigned int i = 0; i < mServoArray.size(); i++) {
+		mServoArray[i] = CServoMotor(i, 100);
+	}
+	for (unsigned int i = 0; i < mDAIn.size(); i++) {
+		mDAIn[i] = DigitalAnalogIn(i);
+	}
+	Serial.println("[Q] IO-Objects successfully created.\n");
 
-  cycleTime = 5;
+	uebergabestr = "";
+
+	startPtr = new commonElement;	//Anlegen des Start-Elements
+	endPtr = new commonElement;	//Anlegen des End-Elements
+
+	qCreateError = false;
+	qCreateErrorID = 0;
+	qWorkError = false;
+	qWorkErrorID = 0;
+
+	cycleTime = 5;
 }
 
 void SW_queue::setBoardType(bool pMaxi) {

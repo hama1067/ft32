@@ -1,11 +1,13 @@
 #ifndef FT_ESP32_SW_QUEUE_H
 #define FT_ESP32_SW_QUEUE_H
 
+#define QUEUE_DEBUG_OUTPUT 0
+
 #include <string.h> //für String-Operationen
 #include <Arduino.h>  //für String-Operationen
 #include <array>  //Library erlaubt Zugriffssicherung bei Arrays
 
-#include "ft_ESP32_SHM.h" //gemeinsamer Speicher (Shared Memory)
+#include "../shm/ft_ESP32_SHM.h" //gemeinsamer Speicher (Shared Memory)
 #include "ft_ESP32_IOobjects.h" //Klassen der Ausgänge (Hardwaretreiber)
 
 using namespace std;  //zum Handling der Arrays (für Zugriffssicherung)
