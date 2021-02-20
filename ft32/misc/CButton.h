@@ -1,7 +1,7 @@
-#ifndef CBUTTON_H_
+#ifndef CBUTTON_H_ESP32
 #define CBUTTON_H_
 
-#include "ft_ESP32_SHM.h"
+#include "../shm/ft_ESP32_SHM.h"
 
 class CButton
 {

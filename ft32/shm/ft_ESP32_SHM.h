@@ -1,8 +1,8 @@
 #ifndef FT_ESP32_SHM_H_
 #define FT_ESP32_SHM_H_
 
-#include "webData_SHM.h"
-#include "CSpiffsStorage.h"
+#include "../shm/webData_SHM.h"
+#include "../memory/CSpiffsStorage.h"
 
 struct SHM
 { 

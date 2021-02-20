@@ -19,7 +19,7 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-#include "ft_ESP32_SHM.h"
+#include "../shm/ft_ESP32_SHM.h"
 
 #define NUMFLAKES 10
 #define XPOS 0

@@ -5,7 +5,7 @@
  *      Author: joseph
  */
 
-#include "Cipher.h"
+#include "../encrypt/Cipher.h"
 
 Cipher::Cipher() {
   // default unsecure key, its highly recommended to use the overloaded constructor and the function setKey()

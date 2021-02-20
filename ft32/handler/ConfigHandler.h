@@ -8,9 +8,10 @@
 #ifndef CONFIGHANDLER_H_
 #define CONFIGHANDLER_H_
 
-#include "CSpiffsStorage.h"
-#include "Cipher.h"
-#include "ft_ESP32_SHM.h"
+#include "../encrypt/Cipher.h"
+#include "../memory/CSpiffsStorage.h"
+#include "../shm/ft_ESP32_SHM.h"
+
 
 #define CONFIGHANDLER_DEBUG
 
